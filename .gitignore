@@ -1,0 +1,6 @@
+version.hh
+tfsync
+.scons*
+.sconf*
+config.log
+
