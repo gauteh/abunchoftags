@@ -3,4 +3,5 @@ tfsync
 .scons*
 .sconf*
 config.log
+*.o
 
