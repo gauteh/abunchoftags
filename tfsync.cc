@@ -24,20 +24,34 @@
  *       have been deleted from a maildir.
  *
  *
+ * Usage:
+ *
+ *    ./tfsync database_path direction lastmod query [--dryrun]
+ *
+ *    database_path:    path to notmuch database
+ *    direction:        tag-to-maildir or maildir-to-tag
+ *    lastmod:          which revision to start processing from
+ *    query:            further restrict messages to operate on with query
+ *    --dryrun:         do not make any changes.
+ *
  */
 
 /* program options */
 # include <boost/program_options.hpp>
+# include <boost/filesystem.hpp>
 
 # include <iostream>
 # include <string>
 # include <sstream>
+# include <vector>
+# include <algorithm>
 
 # include <notmuch.h>
 
 # include "tfsync.hh"
 
 using namespace std;
+using namespace boost::filesystem;
 
 int main (int argc, char ** argv) {
   cout << "** tag folder sync" << endl;
@@ -81,14 +95,22 @@ int main (int argc, char ** argv) {
   string lastmod (argv[3]);
   cout << "=> lastmod: " << lastmod << endl;
 
+  if (argc < 5) {
+    cerr << "error: did not specify query, use \"*\" for all messages." << endl;
+    return 1;
+  }
+
+  string query (argv[4]);
+  cout << "=> query: " << query << endl;
+
   bool dryrun = true;
 
-  if (argc == 5) {
-    if (string (argv[4]) == "--dryrun")  {
+  if (argc == 6) {
+    if (string (argv[5]) == "--dryrun")  {
       cout << "=> note: dryrun!" << endl;
       dryrun = true;
     } else {
-      cerr << "error: unknown 4th argument." << endl;
+      cerr << "error: unknown 5th argument." << endl;
       return 1;
     }
   }
@@ -97,17 +119,97 @@ int main (int argc, char ** argv) {
   notmuch_database_t * db = setup_db (db_path.c_str());
 
   unsigned int revision = notmuch_database_get_revision (db);
-  cout << "db: current revision: " << revision << endl;
+  cout << "* db: current revision: " << revision << endl;
 
   stringstream ss;
   ss << revision;
   string revision_s = ss.str();
 
   if (direction == MAILDIR_TO_TAG) {
+    cout << "==> running: maildir to tag.." << endl;
+    time_t gt0 = clock ();
 
     notmuch_query_t * query;
     query = notmuch_query_create (db,
-        ("lastmod:" + lastmod + "..." + revision_s).c_str());
+        ("lastmod:" + lastmod + ".." + revision_s).c_str());
+
+    int total_messages = notmuch_query_count_messages (query);
+    cout << "*  messages changed since " << lastmod << ": " << total_messages << endl;
+
+    notmuch_messages_t * messages = notmuch_query_search_messages (query);
+
+    cout << "*  query time: " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms." << endl;
+
+    notmuch_message_t * message;
+
+    int count = 0;
+
+    for (;
+         notmuch_messages_valid (messages);
+         notmuch_messages_move_to_next (messages)) {
+
+      message = notmuch_messages_get (messages);
+
+      if (verbose)
+        cout << "working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
+
+      vector<string> maildirs;
+
+      notmuch_filenames_t * nm_fnms = notmuch_message_get_filenames (message);
+      for (;
+           notmuch_filenames_valid (nm_fnms);
+           notmuch_filenames_move_to_next (nm_fnms)) {
+
+        const char * fnm = notmuch_filenames_get (nm_fnms);
+
+
+        /* path is in style:
+         *
+         * /path/to/db/gaute.vetsj.com/archive/cur/1400669687_1.17691.strange,U=150275,FMD5=e5b16880bf86ed7af066aa97fb0288d8:2,S
+         *
+         * we are only interested in the maildir part.
+         *
+         */
+
+        path p (fnm);
+        p = p.parent_path (); // cur or new
+        p = p.parent_path (); // full maildir
+        p = p.filename ();    // maildir
+
+        maildirs.push_back (p.c_str());
+
+        if (verbose) {
+          cout << "message (" << count << "): maildir: " << p.c_str() << endl;
+        }
+      }
+
+      notmuch_filenames_destroy (nm_fnms);
+
+      /* get tags */
+      vector<string> tags;
+      notmuch_tags_t * nm_tags = notmuch_message_get_tags (message);
+      for (;
+           notmuch_tags_valid (nm_tags);
+           notmuch_tags_move_to_next (nm_tags)) {
+        const char * tag = notmuch_tags_get (nm_tags);
+        tags.push_back (tag);
+
+        if (verbose) {
+          cout << "message (" << count << "): tag: " << tag << endl;
+        }
+      }
+
+      notmuch_tags_destroy (nm_tags);
+
+      /* sort both maildir and tags */
+      sort (maildirs.begin (), maildirs.end ());
+      sort (tags.begin (), tags.end());
+
+      notmuch_message_destroy (message);
+
+      count++;
+    }
+
 
 
   } else {
