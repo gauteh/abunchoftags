@@ -100,8 +100,8 @@ int main (int argc, char ** argv) {
     return 1;
   }
 
-  string query (argv[4]);
-  cout << "=> query: " << query << endl;
+  string inputquery (argv[4]);
+  cout << "=> query: " << inputquery << endl;
 
   bool dryrun = true;
 
@@ -131,7 +131,7 @@ int main (int argc, char ** argv) {
 
     notmuch_query_t * query;
     query = notmuch_query_create (db,
-        ("lastmod:" + lastmod + ".." + revision_s).c_str());
+        ("lastmod:" + lastmod + ".." + revision_s + " " + inputquery).c_str());
 
     int total_messages = notmuch_query_count_messages (query);
     cout << "*  messages changed since " << lastmod << ": " << total_messages << endl;
@@ -205,8 +205,21 @@ int main (int argc, char ** argv) {
       sort (maildirs.begin (), maildirs.end ());
       sort (tags.begin (), tags.end());
 
-      notmuch_message_destroy (message);
+      /* remove tags that are taken care of by notmuch maildir flags */
 
+
+      cout << "message (" << count << "), maildirs: " << maildirs.size() << ", tags: " << tags.size() << endl;
+
+
+      /* tags to add */
+      vector<string> add;
+
+
+      /* tags to remove */
+      vector<string> rem;
+
+
+      notmuch_message_destroy (message);
       count++;
     }
 
@@ -234,6 +247,10 @@ notmuch_database_t * setup_db (const char * db_path) {
   }
 
   return db;
+}
+
+template<class T> bool has (vector<T> v, T e) {
+  return (find(v.begin (), v.end (), e) != v.end ());
 }
 
 

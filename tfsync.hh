@@ -9,6 +9,8 @@ using namespace std;
 
 notmuch_database_t * setup_db (const char *);
 
+template<class T> bool has (vector<T>, T);
+
 bool verbose = true;
 
 /* tags handled by maildir flags */
@@ -18,4 +20,8 @@ vector<string> maildir_flag_tags = { "draft",
                                      "replied",
                                      "unread",
                                    };
+
+/* a copy should always remain in the archive maildir */
+string archive_maildir = "archive";
+
 
