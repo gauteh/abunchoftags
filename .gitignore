@@ -1,5 +1,6 @@
 version.hh
 tfsync
+keywsync
 .scons*
 .sconf*
 config.log

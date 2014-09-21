@@ -94,9 +94,6 @@ vfd.write ("# define GIT_DESC \"%s\"\n\n" % GIT_DESC)
 vfd.close ()
 
 env.Append (CPPPATH = 'src')
-source = (
-          Glob('*.cc')
-          )
 
 conf = Configure(env)
 
@@ -106,8 +103,9 @@ if not conf.CheckHeader ('notmuch.h'):
 
 env = conf.Finish ()
 
-env.Program (source = source, target = 'tfsync')
-env.Alias ('build', 'tfsync')
+env.Program (source = 'tfsync.cc', target = 'tfsync')
+env.Program (source = 'keywsync.cc', target = 'keywsync')
+env.Alias ('build', ['tfsync', 'keywsync'])
 
 Export ('env')
 
