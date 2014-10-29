@@ -12,10 +12,18 @@ using namespace boost::filesystem;
 
 notmuch_database_t * setup_db (const char *);
 
-/* tags to ignore from syncing (_must_ be sorted!) */
+/* tags to ignore from syncing (_must_ be sorted!)
+ *
+ * these are either internal notmuch tags or tags handled
+ * by maildirflags.
+ *
+ */
 const vector<string> ignore_tags = {
+  "draft",
   "flagged",
   "important",
+  "new",
+  "passed",
   "replied",
   "sent",
   "signed",
