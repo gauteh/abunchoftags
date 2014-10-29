@@ -321,6 +321,8 @@ int main (int argc, char ** argv) {
     } else {
       /* tag to keyword mode */
 
+      bool change = false;
+
       /* tags to add */
       vector<string> add;
       set_difference (db_tags.begin (),
@@ -338,6 +340,7 @@ int main (int argc, char ** argv) {
                       db_tags.end (),
                       back_inserter (rem));
 
+      vector<string> new_file_tags = file_tags;
 
       if (!only_remove) {
         if (add.size () > 0) {
@@ -347,7 +350,14 @@ int main (int argc, char ** argv) {
           if (dryrun) cout << "[dryrun]";
           cout << endl;
         }
+
+        for (auto t : add)
+          new_file_tags.push_back (t);
+
+        change = true;
       }
+
+      sort (new_file_tags.begin (), new_file_tags.end());
 
       if (!only_add) {
         if (rem.size () > 0) {
@@ -356,6 +366,31 @@ int main (int argc, char ** argv) {
 
           if (dryrun) cout << "[dryrun]";
           cout << endl;
+        }
+
+        vector<string> diff;
+        set_difference (new_file_tags.begin(),
+                        new_file_tags.end (),
+                        rem.begin (),
+                        rem.end (),
+                        back_inserter (diff));
+        new_file_tags = diff;
+        change = true;
+      }
+
+      if (change) {
+        for (string p : paths) {
+          if (verbose) {
+            cout << "old tags: ";
+            for (auto t : file_tags) cout << t << " ";
+            cout << endl;
+            cout << "new tags: ";
+            for (auto t : new_file_tags) cout << t << " ";
+            cout << endl;
+          }
+          if (!dryrun) {
+            write_tags (p, new_file_tags);
+          }
         }
       }
     }
@@ -539,6 +574,18 @@ vector<string> get_keywords (string p) {
 
   return file_tags;
 }
+
+
+void write_tags (string path, vector<string> tags) {
+  /* do the reverse replacements */
+
+  if (enable_split_chars) {
+    cerr << "error: cant do reverse tag/keyword transformation when enable_split_chars is enabled" << endl;
+    exit (1);
+  }
+
+}
+
 
 void split_string (vector<string> & tokens, string str, string delim) {
 

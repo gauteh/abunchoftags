@@ -43,6 +43,7 @@ const list<pair<char,char>> replace_chars {
 };
 
 /* split chars, done before replace chars */
+bool enable_split_chars = true;
 const vector<string> split_chars {
   "/",
 };
@@ -50,6 +51,8 @@ const vector<string> split_chars {
 bool keywords_consistency_check (vector<string> &, vector<string> &);
 vector<string> get_keywords (string p);
 void split_string (vector<string> &, string, string);
+
+void write_tags (string p, vector<string> tags);
 
 template<class T> bool has (vector<T>, T);
 
