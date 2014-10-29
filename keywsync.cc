@@ -68,7 +68,9 @@ int main (int argc, char ** argv) {
     ( "query,q", po::value<string>(), "restrict which messages to sync with notmuch query")
     ( "dry-run,d", "do not apply any changes.")
     ( "verbose,v", "verbose")
-    ( "paranoid,p", "be paranoid, fail easily.");
+    ( "paranoid,p", "be paranoid, fail easily.")
+    ( "only-add,a", "only add tags")
+    ( "only-remove,r", "only remove tags");
 
   po::variables_map vm;
   po::store ( po::command_line_parser (argc, argv).options(desc).run(), vm );
@@ -129,6 +131,13 @@ int main (int argc, char ** argv) {
 
   verbose = (vm.count("verbose") > 0);
   paranoid = (vm.count("paranoid") > 0);
+  only_add = (vm.count("only-add") > 0);
+  only_remove = (vm.count("only-remove") > 0);
+
+  if (only_add && only_remove) {
+    cerr << "only one of -a or -r can be specified at the same time" << endl;
+    exit (1);
+  }
 
   /* open db */
   nm_db = setup_db (db_path.c_str());
@@ -258,20 +267,24 @@ int main (int argc, char ** argv) {
                       back_inserter (rem));
 
 
-      if (add.size () > 0) {
-        cout << "=> adding tags: ";
-        for (auto t : add) cout << t << " ";
+      if (!only_remove) {
+        if (add.size () > 0) {
+          cout << "=> adding tags: ";
+          for (auto t : add) cout << t << " ";
 
-        if (dryrun) cout << "[dryrun]";
-        cout << endl;
+          if (dryrun) cout << "[dryrun]";
+          cout << endl;
+        }
       }
 
-      if (rem.size () > 0) {
-        cout << "=> removing tags: ";
-        for (auto t : rem) cout << t << " ";
+      if (!only_add) {
+        if (rem.size () > 0) {
+          cout << "=> removing tags: ";
+          for (auto t : rem) cout << t << " ";
 
-        if (dryrun) cout << "[dryrun]";
-        cout << endl;
+          if (dryrun) cout << "[dryrun]";
+          cout << endl;
+        }
       }
 
       notmuch_message_destroy (message);

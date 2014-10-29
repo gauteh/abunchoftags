@@ -57,6 +57,8 @@ string    inputquery;
 bool verbose = true;
 bool dryrun  = true;
 bool paranoid = true;
+bool only_add = false;
+bool only_remove = false;
 
 string db_path;
 notmuch_database_t * nm_db;
