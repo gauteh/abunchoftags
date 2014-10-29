@@ -49,7 +49,7 @@ const vector<string> split_chars {
 };
 
 bool keywords_consistency_check (vector<string> &, vector<string> &);
-vector<string> get_keywords (string p);
+vector<string> get_keywords (string p, bool);
 void split_string (vector<string> &, string, string);
 
 void write_tags (string p, vector<string> tags);

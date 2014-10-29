@@ -2,6 +2,7 @@
  *
  * Sync X-Keywords with notmuch tags
  *
+ * Author: Gaute Hope <eg@gaute.vetsj.com> / 2014 (c) GNU GPL v3 or later.
  *
  * tag-to-keyword:
  *
@@ -174,11 +175,12 @@ int main (int argc, char ** argv) {
     message = notmuch_messages_get (messages);
 
     if (verbose)
-      cout << "working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
+      cout << "==> working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
 
     vector<string> file_tags;
     vector<string> paths;
 
+    // get source files {{{
     notmuch_filenames_t * nm_fnms = notmuch_message_get_filenames (message);
     for (;
          notmuch_filenames_valid (nm_fnms);
@@ -187,39 +189,34 @@ int main (int argc, char ** argv) {
       const char * fnm = notmuch_filenames_get (nm_fnms);
 
       paths.push_back (fnm);
-
-      if (verbose) {
-        cout << "message (" << count << "): file: " << fnm << endl;
-      }
+      if (verbose)
+        cout << "* message file: " << fnm << endl;
     }
 
-    notmuch_filenames_destroy (nm_fnms);
+    notmuch_filenames_destroy (nm_fnms); // }}}
 
-    /* test if keywords are consistent between all paths */
+    /* get and test if keywords are consistent between all paths */
     bool consistent = keywords_consistency_check (paths, file_tags);
     if (!consistent) {
-      cerr << "error: inconsistent tags for files!" << endl;
+      cerr << "=> error: inconsistent tags for files!" << endl;
       if (paranoid) {
         exit (1);
       } else {
         /* possibly keep going? */
+        cerr << "=> skipping message." << endl;
         continue;
       }
     }
 
-
-    /* get tags */
+    /* get tags from db */
     vector<string> db_tags;
     notmuch_tags_t * nm_tags = notmuch_message_get_tags (message);
     for (;
          notmuch_tags_valid (nm_tags);
          notmuch_tags_move_to_next (nm_tags)) {
+
       const char * tag = notmuch_tags_get (nm_tags);
       db_tags.push_back (tag);
-
-      if (verbose) {
-        cout << "message (" << count << "): tag: " << tag << endl;
-      }
     }
 
     notmuch_tags_destroy (nm_tags);
@@ -235,19 +232,17 @@ int main (int argc, char ** argv) {
                     ignore_tags.end (),
                     back_inserter (diff));
 
-
     db_tags = diff;
 
 
-
-    cout << "message (" << count << "), file tags (" << file_tags.size()
+    cout << "* message (" << count << "), file tags (" << file_tags.size()
          << "): ";
     for (auto t : file_tags) cout << t << " ";
     cout << ", db tags (" << db_tags.size() << "): ";
     for (auto t : db_tags) cout << t << " ";
     cout << endl;
 
-    if (direction == KEYWORD_TO_TAG) {
+    if (direction == KEYWORD_TO_TAG) { // {{{
 
       /* keyword to tag mode */
 
@@ -319,8 +314,8 @@ int main (int argc, char ** argv) {
         }
       }
 
-    } else {
-      /* tag to keyword mode */
+      // }}}
+    } else { /* tag to keyword mode {{{ */
 
       bool change = false;
 
@@ -379,6 +374,17 @@ int main (int argc, char ** argv) {
         change = true;
       }
 
+      /* get file tags with normally ignored kws */
+      auto file_tags_all = get_keywords (paths[0], true);
+      vector<string> diff;
+      set_difference (file_tags_all.begin(),
+                      file_tags_all.end (),
+                      file_tags.begin (),
+                      file_tags.end (),
+                      back_inserter (diff));
+      for (auto t : diff)
+        new_file_tags.push_back (t);
+
       if (change) {
         for (string p : paths) {
           if (verbose) {
@@ -394,9 +400,13 @@ int main (int argc, char ** argv) {
           }
         }
       }
-    }
+    } // }}}
 
     notmuch_message_destroy (message);
+
+    if (verbose)
+      cout << "==> message (" << count << ") done." << endl;
+
     count++;
   }
 
@@ -407,27 +417,7 @@ int main (int argc, char ** argv) {
   return 0;
 }
 
-
-notmuch_database_t * setup_db (const char * db_path) {
-
-  notmuch_database_t * db;
-  auto s = notmuch_database_open (db_path,
-      NOTMUCH_DATABASE_MODE_READ_WRITE,
-      &db);
-
-  if (s != NOTMUCH_STATUS_SUCCESS) {
-    cerr << "db: could not open database." << endl;
-    exit (1);
-  }
-
-  return db;
-}
-
-template<class T> bool has (vector<T> v, T e) {
-  return (find(v.begin (), v.end (), e) != v.end ());
-}
-
-bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tags) {
+bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tags) { // {{{
   /* check if all source files for one message have the same tags, outputs
    * all discovered tags to file_tags */
 
@@ -435,7 +425,7 @@ bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tag
   bool valid = true;
 
   for (string & p : paths) {
-    auto t = get_keywords (p);
+    auto t = get_keywords (p, false);
 
     if (first) {
       first = false;
@@ -462,9 +452,9 @@ bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tag
   }
 
   return valid;
-}
+} // }}}
 
-vector<string> get_keywords (string p) {
+vector<string> get_keywords (string p, bool dont_ignore) { // {{{
   /* get the X-Keywords header from a message and return
    * a _sorted_ vector of strings with the keywords. */
 
@@ -499,20 +489,25 @@ vector<string> get_keywords (string p) {
     cout << "parsing keywords: " << kws << endl;
   }
 
-  vector<string> initial_tags;
-  split_string (initial_tags, kws, ",");
+  if (enable_split_chars) {
+    vector<string> initial_tags;
+    split_string (initial_tags, kws, ",");
 
-  /* split tags that need splitting into separate tags */
-  for (string s : split_chars) {
-    for (auto t : initial_tags) {
-      vector<string> k;
-      split_string (k, t, s);
+    /* split tags that need splitting into separate tags */
+    for (string s : split_chars) {
+      for (auto t : initial_tags) {
+        vector<string> k;
+        split_string (k, t, s);
 
-      for (auto kt : k) {
-        file_tags.push_back (kt);
+        for (auto kt : k) {
+          file_tags.push_back (kt);
+        }
       }
     }
+  } else {
+    split_string (file_tags, kws, ",");
   }
+
 
   sort (file_tags.begin (), file_tags.end());
   auto it = unique (file_tags.begin(), file_tags.end());
@@ -554,30 +549,31 @@ vector<string> get_keywords (string p) {
     cout << endl;
   }
 
-  /* remove ignored */
-  vector<string> diff;
-  set_difference (file_tags.begin (),
-                  file_tags.end (),
-                  ignore_tags.begin (),
-                  ignore_tags.end (),
-                  back_inserter (diff));
+  if (!dont_ignore) {
+    /* remove ignored */
+    vector<string> diff;
+    set_difference (file_tags.begin (),
+                    file_tags.end (),
+                    ignore_tags.begin (),
+                    ignore_tags.end (),
+                    back_inserter (diff));
 
 
-  file_tags = diff;
+    file_tags = diff;
 
-  if (verbose) {
-    cout << "tags after ignore: ";
-    for (auto t : file_tags) {
-      cout << t << " ";
+    if (verbose) {
+      cout << "tags after ignore: ";
+      for (auto t : file_tags) {
+        cout << t << " ";
+      }
+      cout << endl;
     }
-    cout << endl;
   }
 
   return file_tags;
-}
+} // }}}
 
-
-void write_tags (string path, vector<string> tags) {
+void write_tags (string path, vector<string> tags) { // {{{
   /* do the reverse replacements */
 
   if (enable_split_chars) {
@@ -594,6 +590,24 @@ void write_tags (string path, vector<string> tags) {
   if (xkeyw != NULL) {
     cout << "current xkeywords: " << xkeyw << endl;
   }
+
+  /* reverse map */
+  for (auto &t : tags) {
+    for (auto rep : replace_chars) {
+      replace (t.begin(), t.end(), rep.first, rep.second);
+    }
+
+    auto fnd = find_if (map_tags.begin(), map_tags.end (),
+        [&](pair<string,string> p) {
+          return (t == p.second);
+        });
+
+    if (fnd != map_tags.end ()) {
+      t = (*fnd).first;
+    }
+  }
+
+  sort (tags.begin (), tags.end());
 
   string newh;
   bool first = true;
@@ -615,8 +629,13 @@ void write_tags (string path, vector<string> tags) {
   g_object_unref (parser);
   g_mime_stream_close (f);
 
-}
+} // }}}
 
+/* utils {{{ */
+
+template<class T> bool has (vector<T> v, T e) {
+  return (find(v.begin (), v.end (), e) != v.end ());
+}
 
 void split_string (vector<string> & tokens, string str, string delim) {
 
@@ -624,5 +643,20 @@ void split_string (vector<string> & tokens, string str, string delim) {
 
 }
 
+notmuch_database_t * setup_db (const char * db_path) {
 
+  notmuch_database_t * db;
+  auto s = notmuch_database_open (db_path,
+      NOTMUCH_DATABASE_MODE_READ_WRITE,
+      &db);
+
+  if (s != NOTMUCH_STATUS_SUCCESS) {
+    cerr << "db: could not open database." << endl;
+    exit (1);
+  }
+
+  return db;
+}
+
+/* }}} */
 
