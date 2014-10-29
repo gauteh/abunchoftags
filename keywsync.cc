@@ -26,13 +26,11 @@
  *
  * Usage:
  *
- *    ./keywsync database_path direction lastmod query [--dryrun]
+ *  run
  *
- *    database_path:    path to notmuch database
- *    direction:        tag-to-keyword or keyword-to-tag
- *    lastmod:          which revision to start processing from
- *    query:            further restrict messages to operate on with query
- *    --dryrun:         do not make any changes.
+ *    $ ./keywsync -h
+ *
+ *  for usage information.
  *
  */
 

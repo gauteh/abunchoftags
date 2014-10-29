@@ -77,16 +77,62 @@ if os.environ.has_key('CPPFLAGS'):
 if os.environ.has_key('LDFLAGS'):
   env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
 
+
+def CheckPKGConfig(context, version):
+  context.Message( 'Checking for pkg-config... ' )
+  ret = context.TryAction('pkg-config --atleast-pkgconfig-version=%s' % version)[0]
+  context.Result( ret )
+  return ret
+
+def CheckPKG(context, name):
+  context.Message( 'Checking for %s... ' % name )
+  ret = context.TryAction('pkg-config --exists \'%s\'' % name)[0]
+  context.Result( ret )
+  return ret
+
+
+conf = Configure(env, custom_tests = { 'CheckPKGConfig' : CheckPKGConfig,
+                                       'CheckPKG' : CheckPKG })
+
+if not conf.CheckPKGConfig('0.15.0'):
+  print 'pkg-config >= 0.15.0 not found.'
+  Exit(1)
+
+if not conf.CheckPKG('glibmm-2.4'):
+  print "glibmm-2.4 not found."
+  Exit (1)
+
+if not conf.CheckPKG('gmime-2.6'):
+  print "gmime-2.6 not found."
+  Exit (1)
+
+if not conf.CheckLibWithHeader ('notmuch', 'notmuch.h', 'c'):
+  print "notmuch does not seem to be installed."
+  Exit (1)
+
+# external libraries
 env.ParseConfig ('pkg-config --libs --cflags glibmm-2.4')
 env.ParseConfig ('pkg-config --libs --cflags gmime-2.6')
 
+if not conf.CheckLib ('boost_filesystem', language = 'c++'):
+  print "boost_filesystem does not seem to be installed."
+  Exit (1)
+
+if not conf.CheckLib ('boost_system', language = 'c++'):
+  print "boost_system does not seem to be installed."
+  Exit (1)
+
+if not conf.CheckLib ('boost_program_options', language = 'c++'):
+  print "boost_program_options does not seem to be installed."
+  Exit (1)
+
 libs   = ['notmuch',
-          'boost_system',
           'boost_filesystem',
+          'boost_system',
           'boost_program_options',]
 
-env.Append (LIBS = libs)
-env.Append (CPPFLAGS = ['-g', '-Wall', '-std=c++11', '-pthread'] )
+env.AppendUnique (LIBS = libs)
+env.AppendUnique (CPPFLAGS = ['-g', '-Wall', '-std=c++11', '-pthread'] )
 
 # write version file
 print ("writing version.hh..")
@@ -96,12 +142,6 @@ vfd.write ("# define GIT_DESC \"%s\"\n\n" % GIT_DESC)
 vfd.close ()
 
 env.Append (CPPPATH = 'src')
-
-conf = Configure(env)
-
-if not conf.CheckHeader ('notmuch.h'):
-  print "notmuch does not seem to be installed."
-  exit (1)
 
 env = conf.Finish ()
 
