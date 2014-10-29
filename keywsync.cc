@@ -149,105 +149,104 @@ int main (int argc, char ** argv) {
   ss << revision;
   string revision_s = ss.str();
 
-  if (direction == KEYWORD_TO_TAG) {
-    cout << "==> running: keyword to tag.." << endl;
-    time_t gt0 = clock ();
+  time_t gt0 = clock ();
 
-    notmuch_query_t * query;
-    query = notmuch_query_create (nm_db,
-        inputquery.c_str());
+  notmuch_query_t * query;
+  query = notmuch_query_create (nm_db,
+      inputquery.c_str());
 
-    int total_messages = notmuch_query_count_messages (query);
-    cout << "*  messages to check: " << total_messages << endl;
+  int total_messages = notmuch_query_count_messages (query);
+  cout << "*  messages to check: " << total_messages << endl;
 
-    notmuch_messages_t * messages = notmuch_query_search_messages (query);
+  notmuch_messages_t * messages = notmuch_query_search_messages (query);
 
-    cout << "*  query time: " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms." << endl;
+  cout << "*  query time: " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms." << endl;
 
-    notmuch_message_t * message;
+  notmuch_message_t * message;
 
-    int count = 0;
+  int count = 0;
 
+  for (;
+       notmuch_messages_valid (messages);
+       notmuch_messages_move_to_next (messages)) {
+
+    message = notmuch_messages_get (messages);
+
+    if (verbose)
+      cout << "working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
+
+    vector<string> file_tags;
+    vector<string> paths;
+
+    notmuch_filenames_t * nm_fnms = notmuch_message_get_filenames (message);
     for (;
-         notmuch_messages_valid (messages);
-         notmuch_messages_move_to_next (messages)) {
+         notmuch_filenames_valid (nm_fnms);
+         notmuch_filenames_move_to_next (nm_fnms)) {
 
-      message = notmuch_messages_get (messages);
+      const char * fnm = notmuch_filenames_get (nm_fnms);
 
-      if (verbose)
-        cout << "working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
+      paths.push_back (fnm);
 
-      vector<string> file_tags;
-      vector<string> paths;
-
-      notmuch_filenames_t * nm_fnms = notmuch_message_get_filenames (message);
-      for (;
-           notmuch_filenames_valid (nm_fnms);
-           notmuch_filenames_move_to_next (nm_fnms)) {
-
-        const char * fnm = notmuch_filenames_get (nm_fnms);
-
-        paths.push_back (fnm);
-
-        if (verbose) {
-          cout << "message (" << count << "): file: " << fnm << endl;
-        }
+      if (verbose) {
+        cout << "message (" << count << "): file: " << fnm << endl;
       }
+    }
 
-      notmuch_filenames_destroy (nm_fnms);
+    notmuch_filenames_destroy (nm_fnms);
 
-      /* test if keywords are consistent between all paths */
-      bool consistent = keywords_consistency_check (paths, file_tags);
-      if (!consistent) {
-        cerr << "error: inconsistent tags for files!" << endl;
-        if (paranoid) {
-          exit (1);
-        } else {
-          /* possibly keep going? */
-          continue;
-        }
+    /* test if keywords are consistent between all paths */
+    bool consistent = keywords_consistency_check (paths, file_tags);
+    if (!consistent) {
+      cerr << "error: inconsistent tags for files!" << endl;
+      if (paranoid) {
+        exit (1);
+      } else {
+        /* possibly keep going? */
+        continue;
       }
+    }
 
 
-      /* get tags */
-      vector<string> db_tags;
-      notmuch_tags_t * nm_tags = notmuch_message_get_tags (message);
-      for (;
-           notmuch_tags_valid (nm_tags);
-           notmuch_tags_move_to_next (nm_tags)) {
-        const char * tag = notmuch_tags_get (nm_tags);
-        db_tags.push_back (tag);
+    /* get tags */
+    vector<string> db_tags;
+    notmuch_tags_t * nm_tags = notmuch_message_get_tags (message);
+    for (;
+         notmuch_tags_valid (nm_tags);
+         notmuch_tags_move_to_next (nm_tags)) {
+      const char * tag = notmuch_tags_get (nm_tags);
+      db_tags.push_back (tag);
 
-        if (verbose) {
-          cout << "message (" << count << "): tag: " << tag << endl;
-        }
+      if (verbose) {
+        cout << "message (" << count << "): tag: " << tag << endl;
       }
+    }
 
-      notmuch_tags_destroy (nm_tags);
+    notmuch_tags_destroy (nm_tags);
 
-      /* sort tags (file_tags are already sorted) */
-      sort (db_tags.begin (), db_tags.end());
+    /* sort tags (file_tags are already sorted) */
+    sort (db_tags.begin (), db_tags.end());
 
-      /* remove ignored tags */
-      vector<string> diff;
-      set_difference (db_tags.begin (),
-                      db_tags.end (),
-                      ignore_tags.begin (),
-                      ignore_tags.end (),
-                      back_inserter (diff));
-
-
-      db_tags = diff;
+    /* remove ignored tags */
+    vector<string> diff;
+    set_difference (db_tags.begin (),
+                    db_tags.end (),
+                    ignore_tags.begin (),
+                    ignore_tags.end (),
+                    back_inserter (diff));
 
 
+    db_tags = diff;
 
-      cout << "message (" << count << "), file tags (" << file_tags.size()
-           << "): ";
-      for (auto t : file_tags) cout << t << " ";
-      cout << ", db tags (" << db_tags.size() << "): ";
-      for (auto t : db_tags) cout << t << " ";
-      cout << endl;
 
+
+    cout << "message (" << count << "), file tags (" << file_tags.size()
+         << "): ";
+    for (auto t : file_tags) cout << t << " ";
+    cout << ", db tags (" << db_tags.size() << "): ";
+    for (auto t : db_tags) cout << t << " ";
+    cout << endl;
+
+    if (direction == KEYWORD_TO_TAG) {
 
       /* tags to add */
       vector<string> add;
@@ -287,16 +286,52 @@ int main (int argc, char ** argv) {
         }
       }
 
-      notmuch_message_destroy (message);
-      count++;
+    } else {
+      /* tags to add */
+      vector<string> add;
+      set_difference (db_tags.begin (),
+                      db_tags.end (),
+                      file_tags.begin (),
+                      file_tags.end (),
+                      back_inserter (add));
+
+
+      /* tags to remove */
+      vector<string> rem;
+      set_difference (file_tags.begin (),
+                      file_tags.end (),
+                      db_tags.begin (),
+                      db_tags.end (),
+                      back_inserter (rem));
+
+
+      if (!only_remove) {
+        if (add.size () > 0) {
+          cout << "=> adding tags: ";
+          for (auto t : add) cout << t << " ";
+
+          if (dryrun) cout << "[dryrun]";
+          cout << endl;
+        }
+      }
+
+      if (!only_add) {
+        if (rem.size () > 0) {
+          cout << "=> removing tags: ";
+          for (auto t : rem) cout << t << " ";
+
+          if (dryrun) cout << "[dryrun]";
+          cout << endl;
+        }
+      }
     }
 
-
-
-  } else {
-    cerr << "error: TAG_TO_KEYWORD not implemented." << endl;
-    exit (1);
+    notmuch_message_destroy (message);
+    count++;
   }
+
+
+  cout << "=> done, checked: " << count << " messages in " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms." << endl;
 
   return 0;
 }

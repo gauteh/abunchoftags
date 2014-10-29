@@ -54,7 +54,7 @@ enum Direction {
 Direction direction;
 string    inputquery;
 
-bool verbose = true;
+bool verbose = false;
 bool dryrun  = true;
 bool paranoid = true;
 bool only_add = false;
