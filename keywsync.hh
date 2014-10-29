@@ -63,8 +63,8 @@ Direction direction;
 string    inputquery;
 
 bool verbose = false;
-bool dryrun  = true;
-bool paranoid = true;
+bool dryrun  = false;
+bool paranoid = false;
 bool only_add = false;
 bool only_remove = false;
 

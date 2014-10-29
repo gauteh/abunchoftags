@@ -248,6 +248,9 @@ int main (int argc, char ** argv) {
 
     if (direction == KEYWORD_TO_TAG) {
 
+      /* keyword to tag mode */
+
+
       /* tags to add */
       vector<string> add;
       set_difference (file_tags.begin (),
@@ -273,6 +276,20 @@ int main (int argc, char ** argv) {
 
           if (dryrun) cout << "[dryrun]";
           cout << endl;
+
+          if (!dryrun) {
+            for (auto t : add) {
+              notmuch_status_t s = notmuch_message_add_tag (
+                  message,
+                  t.c_str());
+
+              if (s != NOTMUCH_STATUS_SUCCESS) {
+                cerr << "error: could not add tag " << t << " to message." << endl;
+                exit (1);
+              }
+
+            }
+          }
         }
       }
 
@@ -283,10 +300,27 @@ int main (int argc, char ** argv) {
 
           if (dryrun) cout << "[dryrun]";
           cout << endl;
+
+          if (!dryrun) {
+            for (auto t : rem) {
+              notmuch_status_t s = notmuch_message_remove_tag (
+                  message,
+                  t.c_str());
+
+              if (s != NOTMUCH_STATUS_SUCCESS) {
+                cerr << "error: could not add tag " << t << " to message." << endl;
+                exit (1);
+              }
+
+            }
+
+          }
         }
       }
 
     } else {
+      /* tag to keyword mode */
+
       /* tags to add */
       vector<string> add;
       set_difference (db_tags.begin (),
@@ -330,6 +364,7 @@ int main (int argc, char ** argv) {
     count++;
   }
 
+  notmuch_database_close (nm_db);
 
   cout << "=> done, checked: " << count << " messages in " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms." << endl;
 
