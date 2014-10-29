@@ -43,7 +43,7 @@ const list<pair<char,char>> replace_chars {
 };
 
 /* split chars, done before replace chars */
-bool enable_split_chars = true;
+bool enable_split_chars = false;
 const vector<string> split_chars {
   "/",
 };

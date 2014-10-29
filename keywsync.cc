@@ -46,6 +46,7 @@
 # include <algorithm>
 
 # include <glibmm.h>
+# include <gmime/gmime.h>
 
 # include <notmuch.h>
 
@@ -583,6 +584,36 @@ void write_tags (string path, vector<string> tags) {
     cerr << "error: cant do reverse tag/keyword transformation when enable_split_chars is enabled" << endl;
     exit (1);
   }
+
+  GMimeStream * f = g_mime_stream_file_new_for_path (path.c_str(),
+      "r");
+  GMimeParser * parser = g_mime_parser_new_with_stream (f);
+  GMimeMessage * message = g_mime_parser_construct_message (parser);
+
+  const char * xkeyw = g_mime_object_get_header (GMIME_OBJECT(message), "X-Keywords");
+  if (xkeyw != NULL) {
+    cout << "current xkeywords: " << xkeyw << endl;
+  }
+
+  string newh;
+  bool first = true;
+  for (auto t : tags) {
+    if (!first) newh = newh + ",";
+    first = false;
+    newh = newh + t;
+  }
+
+  g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh.c_str());
+
+  GMimeStream * out = g_mime_stream_file_new_for_path ("/tmp/testmsg", "w");
+  g_mime_object_write_to_stream (GMIME_OBJECT(message), out);
+
+  g_mime_stream_flush (out);
+  g_mime_stream_close (out);
+
+  g_object_unref (message);
+  g_object_unref (parser);
+  g_mime_stream_close (f);
 
 }
 
