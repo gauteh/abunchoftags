@@ -393,9 +393,8 @@ int main (int argc, char ** argv) {
             for (auto t : new_file_tags) cout << t << " ";
             cout << endl;
           }
-          if (!dryrun) {
-            write_tags (p, new_file_tags);
-          }
+
+          write_tags (p, new_file_tags);
         }
       }
     } // }}}
@@ -586,7 +585,9 @@ void write_tags (string path, vector<string> tags) { // {{{
 
   const char * xkeyw = g_mime_object_get_header (GMIME_OBJECT(message), "X-Keywords");
   if (xkeyw != NULL) {
-    cout << "current xkeywords: " << xkeyw << endl;
+    cout << "=> current xkeywords: " << xkeyw << endl;
+  } else {
+    cout << "=> current xkeywords: non-existent." << endl;
   }
 
   /* reverse map */
@@ -615,13 +616,15 @@ void write_tags (string path, vector<string> tags) { // {{{
     newh = newh + t;
   }
 
-  g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh.c_str());
+  if (!dryrun) {
+    g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh.c_str());
 
-  GMimeStream * out = g_mime_stream_file_new_for_path ("/tmp/testmsg", "w");
-  g_mime_object_write_to_stream (GMIME_OBJECT(message), out);
+    GMimeStream * out = g_mime_stream_file_new_for_path ("/tmp/testmsg", "w");
+    g_mime_object_write_to_stream (GMIME_OBJECT(message), out);
 
-  g_mime_stream_flush (out);
-  g_mime_stream_close (out);
+    g_mime_stream_flush (out);
+    g_mime_stream_close (out);
+  }
 
   g_object_unref (message);
   g_object_unref (parser);
