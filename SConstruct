@@ -77,6 +77,7 @@ if os.environ.has_key('CPPFLAGS'):
 if os.environ.has_key('LDFLAGS'):
   env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
 
+env.ParseConfig ('pkg-config --libs --cflags glibmm-2.4')
 
 libs   = ['notmuch',
           'boost_system',

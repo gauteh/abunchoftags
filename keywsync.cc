@@ -45,6 +45,8 @@
 # include <vector>
 # include <algorithm>
 
+# include <glibmm.h>
+
 # include <notmuch.h>
 
 # include "keywsync.hh"
@@ -60,11 +62,13 @@ int main (int argc, char ** argv) {
   po::options_description desc ("options");
   desc.add_options ()
     ( "help,h", "print this help message")
-    ( "database,d", po::value<string>(), "notmuch database")
+    ( "database,m", po::value<string>(), "notmuch database")
     ( "keyword-to-tag,k", "sync keywords to tags")
     ( "tag-to-keyword,t", "sync tags to keywords")
     ( "query,q", po::value<string>(), "restrict which messages to sync with notmuch query")
-    ( "dry-run,d", "do not apply any changes.");
+    ( "dry-run,d", "do not apply any changes.")
+    ( "verbose,v", "verbose")
+    ( "paranoid,p", "be paranoid, fail easily.");
 
   po::variables_map vm;
   po::store ( po::command_line_parser (argc, argv).options(desc).run(), vm );
@@ -77,88 +81,75 @@ int main (int argc, char ** argv) {
 
   /* load config */
   if (vm.count("database")) {
+    db_path = vm["database"].as<string>();
   } else {
+    cout << "error: specify database path." << endl;
+    exit (1);
   }
 
-  if (argc < 2) {
-    cerr << "error: specify database path." << endl;
-    return 1;
-  }
-
-  string db_path = string (argv[1]);
   cout << "=> db: " << db_path << endl;
 
-  if (argc < 3) {
-    cerr << "error: specify either tag-to-maildir or maildir-to-tag" << endl;
-    return 1;
+  direction = NONE;
+
+  if (vm.count("tag-to-keyword")) {
+    direction = TAG_TO_KEYWORD;
+    cout << "=> direction: tag-to-keyword" << endl;
   }
 
-  enum Direction {
-    TAG_TO_MAILDIR,
-    MAILDIR_TO_TAG,
-  };
+  if (vm.count("keyword-to-tag")) {
+    if (direction != NONE) {
+      cerr << "error: only specify one direction." << endl;
+      exit (1);
+    }
+    cout << "=> direction: keyword-to-tag" << endl;
+    direction = KEYWORD_TO_TAG;
+  }
 
-  Direction direction;
+  if (direction == NONE) {
+    cerr << "error: no direction specified" << endl;
+    exit (1);
+  }
 
-  if (string(argv[2]) == "tag-to-maildir") {
-    direction = TAG_TO_MAILDIR;
-    cout << "=> direction: tag-to-maildir" << endl;
-  } else if (string(argv[2]) == "maildir-to-tag") {
-    cout << "=> direction: maildir-to-tag" << endl;
-    direction = MAILDIR_TO_TAG;
+  if (vm.count("query")) {
+    inputquery = vm["query"].as<string>();
   } else {
-    cerr << "error: unknown argument for direction." << endl;
-    return 1;
-  }
-
-  if (argc < 4) {
-    cerr << "error: specify last modification time or 0 to run through all messages." << endl;
-    return 1;
-  }
-
-  string lastmod (argv[3]);
-  cout << "=> lastmod: " << lastmod << endl;
-
-  if (argc < 5) {
     cerr << "error: did not specify query, use \"*\" for all messages." << endl;
-    return 1;
+    exit (1);
   }
 
-  string inputquery (argv[4]);
   cout << "=> query: " << inputquery << endl;
 
-  bool dryrun = true;
-
-  if (argc == 6) {
-    if (string (argv[5]) == "--dryrun")  {
-      cout << "=> note: dryrun!" << endl;
-      dryrun = true;
-    } else {
-      cerr << "error: unknown 5th argument." << endl;
-      return 1;
-    }
+  if (vm.count ("dry-run")) {
+    cout << "=> note: dryrun!" << endl;
+    dryrun = true;
+  } else {
+    // TODO: remove when more confident
+    cout << "=> note: real-mode, not dry-run!" << endl;
   }
 
-  /* open db */
-  notmuch_database_t * db = setup_db (db_path.c_str());
+  verbose = (vm.count("verbose") > 0);
+  paranoid = (vm.count("paranoid") > 0);
 
-  unsigned int revision = notmuch_database_get_revision (db);
+  /* open db */
+  nm_db = setup_db (db_path.c_str());
+
+  unsigned int revision = notmuch_database_get_revision (nm_db);
   cout << "* db: current revision: " << revision << endl;
 
   stringstream ss;
   ss << revision;
   string revision_s = ss.str();
 
-  if (direction == MAILDIR_TO_TAG) {
-    cout << "==> running: maildir to tag.." << endl;
+  if (direction == KEYWORD_TO_TAG) {
+    cout << "==> running: keyword to tag.." << endl;
     time_t gt0 = clock ();
 
     notmuch_query_t * query;
-    query = notmuch_query_create (db,
-        ("lastmod:" + lastmod + ".." + revision_s + " " + inputquery).c_str());
+    query = notmuch_query_create (nm_db,
+        inputquery.c_str());
 
     int total_messages = notmuch_query_count_messages (query);
-    cout << "*  messages changed since " << lastmod << ": " << total_messages << endl;
+    cout << "*  messages to check: " << total_messages << endl;
 
     notmuch_messages_t * messages = notmuch_query_search_messages (query);
 
@@ -177,7 +168,8 @@ int main (int argc, char ** argv) {
       if (verbose)
         cout << "working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
 
-      vector<string> maildirs;
+      vector<string> file_tags;
+      vector<string> paths;
 
       notmuch_filenames_t * nm_fnms = notmuch_message_get_filenames (message);
       for (;
@@ -186,37 +178,36 @@ int main (int argc, char ** argv) {
 
         const char * fnm = notmuch_filenames_get (nm_fnms);
 
-
-        /* path is in style:
-         *
-         * /path/to/db/gaute.vetsj.com/archive/cur/1400669687_1.17691.strange,U=150275,FMD5=e5b16880bf86ed7af066aa97fb0288d8:2,S
-         *
-         * we are only interested in the maildir part.
-         *
-         */
-
-        path p (fnm);
-        p = p.parent_path (); // cur or new
-        p = p.parent_path (); // full maildir
-        p = p.filename ();    // maildir
-
-        maildirs.push_back (p.c_str());
+        paths.push_back (fnm);
 
         if (verbose) {
-          cout << "message (" << count << "): maildir: " << p.c_str() << endl;
+          cout << "message (" << count << "): file: " << fnm << endl;
         }
       }
 
       notmuch_filenames_destroy (nm_fnms);
 
+      /* test if keywords are consistent between all paths */
+      bool consistent = keywords_consistency_check (paths, file_tags);
+      if (!consistent) {
+        cerr << "error: inconsistent tags for files!" << endl;
+        if (paranoid) {
+          exit (1);
+        } else {
+          /* possibly keep going? */
+          continue;
+        }
+      }
+
+
       /* get tags */
-      vector<string> tags;
+      vector<string> db_tags;
       notmuch_tags_t * nm_tags = notmuch_message_get_tags (message);
       for (;
            notmuch_tags_valid (nm_tags);
            notmuch_tags_move_to_next (nm_tags)) {
         const char * tag = notmuch_tags_get (nm_tags);
-        tags.push_back (tag);
+        db_tags.push_back (tag);
 
         if (verbose) {
           cout << "message (" << count << "): tag: " << tag << endl;
@@ -225,23 +216,63 @@ int main (int argc, char ** argv) {
 
       notmuch_tags_destroy (nm_tags);
 
-      /* sort both maildir and tags */
-      sort (maildirs.begin (), maildirs.end ());
-      sort (tags.begin (), tags.end());
+      /* sort tags (file_tags are already sorted) */
+      sort (db_tags.begin (), db_tags.end());
 
-      /* remove tags that are taken care of by notmuch maildir flags */
+      /* remove ignored tags */
+      vector<string> diff;
+      set_difference (db_tags.begin (),
+                      db_tags.end (),
+                      ignore_tags.begin (),
+                      ignore_tags.end (),
+                      back_inserter (diff));
 
 
-      cout << "message (" << count << "), maildirs: " << maildirs.size() << ", tags: " << tags.size() << endl;
+      db_tags = diff;
+
+
+
+      cout << "message (" << count << "), file tags (" << file_tags.size()
+           << "): ";
+      for (auto t : file_tags) cout << t << " ";
+      cout << ", db tags (" << db_tags.size() << "): ";
+      for (auto t : db_tags) cout << t << " ";
+      cout << endl;
 
 
       /* tags to add */
       vector<string> add;
+      set_difference (file_tags.begin (),
+                      file_tags.end (),
+                      db_tags.begin (),
+                      db_tags.end (),
+                      back_inserter (add));
 
 
       /* tags to remove */
       vector<string> rem;
+      set_difference (db_tags.begin (),
+                      db_tags.end (),
+                      file_tags.begin (),
+                      file_tags.end (),
+                      back_inserter (rem));
 
+
+      if (add.size () > 0) {
+        cout << "=> adding tags: ";
+        for (auto t : add) cout << t << " ";
+
+        if (dryrun) cout << "[dryrun]";
+        cout << endl;
+      }
+
+      if (rem.size () > 0) {
+        cout << "=> removing tags: ";
+        for (auto t : rem) cout << t << " ";
+
+        if (dryrun) cout << "[dryrun]";
+        cout << endl;
+      }
 
       notmuch_message_destroy (message);
       count++;
@@ -250,7 +281,7 @@ int main (int argc, char ** argv) {
 
 
   } else {
-    cerr << "error: not implemented." << endl;
+    cerr << "error: TAG_TO_KEYWORD not implemented." << endl;
     exit (1);
   }
 
@@ -276,5 +307,161 @@ notmuch_database_t * setup_db (const char * db_path) {
 template<class T> bool has (vector<T> v, T e) {
   return (find(v.begin (), v.end (), e) != v.end ());
 }
+
+bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tags) {
+  /* check if all source files for one message have the same tags, outputs
+   * all discovered tags to file_tags */
+
+  bool first = true;
+  bool valid = true;
+
+  for (string & p : paths) {
+    auto t = get_keywords (p);
+
+    if (first) {
+      first = false;
+      file_tags = t;
+    } else {
+
+      vector<string> diff;
+      set_difference (t.begin (),
+                      t.end (),
+                      file_tags.begin (),
+                      file_tags.end (),
+                      back_inserter (diff));
+
+
+      if (diff.size () > 0) {
+        valid = false;
+        for (auto &tt : diff) {
+          file_tags.push_back (tt);
+        }
+
+        sort (file_tags.begin (), file_tags.end ());
+      }
+    }
+  }
+
+  return valid;
+}
+
+vector<string> get_keywords (string p) {
+  /* get the X-Keywords header from a message and return
+   * a _sorted_ vector of strings with the keywords. */
+
+  vector<string> file_tags;
+
+  /* read X-Keywords header */
+  notmuch_message_t * message;
+  notmuch_status_t s = notmuch_database_find_message_by_filename (
+      nm_db,
+      p.c_str(),
+      &message);
+
+  if (s != NOTMUCH_STATUS_SUCCESS) {
+    cerr << "error: opening message file: " << p << endl;
+    exit (1);
+  }
+
+  const char * x_keywords = notmuch_message_get_header (message, "X-Keywords");
+  if (x_keywords == NULL) {
+    /* no such field */
+    cout << "warning: no X-Keywords header for file: " << p << endl;
+    if (paranoid) {
+      exit (1);
+    } else {
+      return file_tags;
+    }
+  }
+
+  string kws (x_keywords);
+
+  if (verbose) {
+    cout << "parsing keywords: " << kws << endl;
+  }
+
+  vector<string> initial_tags;
+  split_string (initial_tags, kws, ",");
+
+  /* split tags that need splitting into separate tags */
+  for (string s : split_chars) {
+    for (auto t : initial_tags) {
+      vector<string> k;
+      split_string (k, t, s);
+
+      for (auto kt : k) {
+        file_tags.push_back (kt);
+      }
+    }
+  }
+
+  sort (file_tags.begin (), file_tags.end());
+  auto it = unique (file_tags.begin(), file_tags.end());
+  file_tags.resize (distance (file_tags.begin(), it));
+
+  notmuch_message_destroy (message);
+
+  if (verbose) {
+    cout << "tags: ";
+    for (auto t : file_tags) {
+      cout << t << " ";
+    }
+    cout << endl;
+  }
+
+  /* do map */
+  for (auto &t : file_tags) {
+    for (auto rep : replace_chars) {
+      replace (t.begin(), t.end(), rep.first, rep.second);
+    }
+
+    auto fnd = find_if (map_tags.begin(), map_tags.end (),
+        [&](pair<string,string> p) {
+          return (t == p.first);
+        });
+
+    if (fnd != map_tags.end ()) {
+      t = (*fnd).second;
+    }
+  }
+
+  sort (file_tags.begin (), file_tags.end());
+
+  if (verbose) {
+    cout << "tags after map: ";
+    for (auto t : file_tags) {
+      cout << "'" <<  t << "' ";
+    }
+    cout << endl;
+  }
+
+  /* remove ignored */
+  vector<string> diff;
+  set_difference (file_tags.begin (),
+                  file_tags.end (),
+                  ignore_tags.begin (),
+                  ignore_tags.end (),
+                  back_inserter (diff));
+
+
+  file_tags = diff;
+
+  if (verbose) {
+    cout << "tags after ignore: ";
+    for (auto t : file_tags) {
+      cout << t << " ";
+    }
+    cout << endl;
+  }
+
+  return file_tags;
+}
+
+void split_string (vector<string> & tokens, string str, string delim) {
+
+  tokens = Glib::Regex::split_simple(delim, str);
+
+}
+
 
 
