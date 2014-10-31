@@ -1,6 +1,7 @@
 version.hh
 tfsync
 keywsync
+notmuch_get_revision
 .scons*
 .sconf*
 config.log

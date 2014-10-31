@@ -44,19 +44,29 @@ Do both in one go:
 Assuming you have fully synced database and you want to synchronize your
 maildir with the remote maildir:
 
+  Note: The query needs to filter messages so that only the messages of the
+  GMail maildir are tested.
+
 1. Synchronize tags local-to-remote (`-t`), now all tag changes done in the
    notmuch db are synchronized with the message files (preferably using a
-   `lastmod:` query [1])
+   `lastmod:` query [1] with changes done after the current time of the db
+   after the previous remote-to-local synchronization)
+
+1. Save the current unix time: `$ before_offlineimap=$( date +%s )`
 
 1. Run `offlineimap` to synchronize your local maildir and messages with the
    remote. According to the offlineimap documentation [0] the X-Keywords flags
    are synchronized in the same way as maildir flags (whatever that means [2]).
 
-1. Synchronize tags remote-to-local (`-k`) (preferably using a `tag:new`
-   query). Notice however, that changes to a flag will without a message
-   addition will not be detected. A `lastmod:` query may detect renames, but
-   still messages with changed `X-Keywords` may remain. A search for message
-   files with mtimes newer than before the `offlineimap` run has to be done.
+1. Synchronize tags remote-to-local (`-k`) using a `query` that filters out anything
+   but the maildir in question. Use the `--mtime` flag to only sync messages that match
+   the `query` and are modified after offlineimap was run: `echo $before_offlineimap`.
+
+1. Store the current database time for the next `lastmod` search in the local-to-remote
+   step of your next search.
+
+Note: `notmuch new` does not detect message changes that do not include a file addition,
+removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
 
 
 [0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels

@@ -154,5 +154,6 @@ env.Program (source = 'tfsync.cc', target = 'tfsync')
 env.Program (source = 'keywsync.cc', target = 'keywsync')
 env.Alias ('build', ['tfsync', 'keywsync'])
 
-Export ('env')
+nmenv = Environment (LIBS = ['notmuch'])
+nmenv.Program ('notmuch_get_revision', source = [ 'notmuch_get_revision.cc' ])
 
