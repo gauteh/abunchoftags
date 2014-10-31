@@ -35,8 +35,9 @@ const vector<string> ignore_tags = {
 /* map keyword to tag, done before ignore_tags */
 const list<pair<string,string>> map_tags {
   { "\\Important", "important" },
-  { "\\Sent", "sent" },
   { "\\Inbox", "inbox" },
+  { "\\Sent", "sent" },
+  { "\\Spam", "spam" },
 };
 
 /* replace chars, done before map keyword to tag */
