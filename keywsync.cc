@@ -282,14 +282,7 @@ int main (int argc, char ** argv) {
     db_tags = diff;
 
 
-    if (verbose) {
-      cout << "* message (" << count << "), file tags (" << file_tags.size()
-           << "): ";
-      for (auto t : file_tags) cout << t << " ";
-      cout << ", db tags (" << db_tags.size() << "): ";
-      for (auto t : db_tags) cout << t << " ";
-      cout << endl;
-    }
+    bool changed = false;
 
     if (direction == KEYWORD_TO_TAG) { // {{{
 
@@ -312,8 +305,6 @@ int main (int argc, char ** argv) {
                       file_tags.begin (),
                       file_tags.end (),
                       back_inserter (rem));
-
-      bool changed = false;
 
       if (!only_remove) {
         if (add.size () > 0) {
@@ -376,8 +367,6 @@ int main (int argc, char ** argv) {
       // }}}
     } else { /* tag to keyword mode {{{ */
 
-      bool change = false;
-
       /* tags to add */
       vector<string> add;
       set_difference (db_tags.begin (),
@@ -411,7 +400,7 @@ int main (int argc, char ** argv) {
         for (auto t : add)
           new_file_tags.push_back (t);
 
-        change = true;
+        changed = true;
       }
 
       sort (new_file_tags.begin (), new_file_tags.end());
@@ -434,7 +423,7 @@ int main (int argc, char ** argv) {
                         rem.end (),
                         back_inserter (diff));
         new_file_tags = diff;
-        change = true;
+        changed = true;
       }
 
       /* get file tags with normally ignored kws */
@@ -448,7 +437,7 @@ int main (int argc, char ** argv) {
       for (auto t : diff)
         new_file_tags.push_back (t);
 
-      if (change) {
+      if (changed) {
         for (string p : paths) {
           if (more_verbose) {
             cout << "old tags: ";
@@ -465,6 +454,15 @@ int main (int argc, char ** argv) {
         count_changed++;
       }
     } // }}}
+
+    if ((verbose && changed) || more_verbose) {
+      cout << "* message (" << count << "), file tags (" << file_tags.size()
+           << "): ";
+      for (auto t : file_tags) cout << t << " ";
+      cout << ", db tags (" << db_tags.size() << "): ";
+      for (auto t : db_tags) cout << t << " ";
+      cout << endl;
+    }
 
     notmuch_message_destroy (message);
 
@@ -687,21 +685,30 @@ void write_tags (string path, vector<string> tags) { // {{{
     newh = newh + t;
   }
 
+  g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh.c_str());
+
+  char fname[80] = "/tmp/keywsync-XXXXXX";
+  int tmpfd = mkstemp (fname);
+  FILE * tmpf = fdopen (tmpfd, "w");
+  GMimeStream * out = g_mime_stream_file_new (tmpf);
+  g_mime_object_write_to_stream (GMIME_OBJECT(message), out);
+
+  g_mime_stream_flush (out);
+  g_mime_stream_close (out);
+
+  if (verbose) {
+    cout << "new file written to: " << fname << endl;
+  }
+
+  /* do move */
+  if (verbose) {
+    cout << "moving " << fname << " to " << path << endl;
+  }
+
   if (!dryrun) {
-    g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh.c_str());
-
-    char fname[80] = "keywsync-XXXXXX";
-    int tmpfd = mkstemp (fname);
-    FILE * tmpf = fdopen (tmpfd, "w");
-    GMimeStream * out = g_mime_stream_file_new (tmpf);
-    g_mime_object_write_to_stream (GMIME_OBJECT(message), out);
-
-    g_mime_stream_flush (out);
-    g_mime_stream_close (out);
-
-    cout << "file: " << fname << " created.." << endl;
-
-    /* do move */
+    rename (fname, path);
+  } else {
+    cout << "dryrun: new file located in: " << fname << endl;
   }
 
   g_object_unref (message);
