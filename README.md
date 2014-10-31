@@ -67,6 +67,7 @@ maildir with the remote maildir:
 
 > Note: `notmuch new` does not detect message changes that do not include a file addition,
 > removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
+> Use the --mtime query to filter out unchanged files.
 
 
 [0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels  
