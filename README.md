@@ -46,11 +46,11 @@ maildir with the remote maildir:
 
 1. Synchronize tags local-to-remote (`-t`), now all tag changes done in the
    notmuch db are synchronized with the message files (preferably using a
-   `lastmod:` query)
+   `lastmod:` query [1])
 
 1. Run `offlineimap` to synchronize your local maildir and messages with the
    remote. According to the offlineimap documentation [0] the X-Keywords flags
-   are synchronized in the same way as maildir flags (whatever that means).
+   are synchronized in the same way as maildir flags (whatever that means [2]).
 
 1. Synchronize tags remote-to-local (`-k`) (preferably using a `tag:new`
    query). Notice however, that changes to a flag will without a message
@@ -60,3 +60,6 @@ maildir with the remote maildir:
 
 
 [0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels
+[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu
+[2] Someone have any documentation anywhere?
+

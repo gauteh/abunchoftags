@@ -126,10 +126,15 @@ if not conf.CheckLib ('boost_program_options', language = 'c++'):
   print "boost_program_options does not seem to be installed."
   Exit (1)
 
+if not conf.CheckLib ('boost_date_time', language = 'c++'):
+  print "boost_date_time does not seem to be installed."
+  Exit (1)
+
 libs   = ['notmuch',
           'boost_filesystem',
           'boost_system',
-          'boost_program_options',]
+          'boost_program_options',
+          'boost_date_time']
 
 env.AppendUnique (LIBS = libs)
 env.AppendUnique (CPPFLAGS = ['-g', '-Wall', '-std=c++11', '-pthread'] )

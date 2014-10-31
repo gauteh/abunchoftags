@@ -4,9 +4,11 @@
 # include <string>
 
 # include <boost/filesystem.hpp>
+# include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace std;
 using namespace boost::filesystem;
+using namespace boost::posix_time;
 
 # include <notmuch.h>
 
@@ -64,6 +66,9 @@ enum Direction {
 
 Direction direction;
 string    inputquery;
+
+bool  mtime_set = false;
+ptime only_after_mtime;
 
 bool verbose = false;
 bool dryrun  = false;

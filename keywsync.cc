@@ -37,12 +37,14 @@
 /* program options */
 # include <boost/program_options.hpp>
 # include <boost/filesystem.hpp>
+# include <boost/date_time/posix_time/posix_time.hpp>
 
 # include <iostream>
 # include <string>
 # include <sstream>
 # include <vector>
 # include <algorithm>
+# include <chrono>
 
 # include <glibmm.h>
 # include <gmime/gmime.h>
@@ -53,6 +55,7 @@
 
 using namespace std;
 using namespace boost::filesystem;
+using namespace boost::posix_time;
 
 int main (int argc, char ** argv) {
   cout << "** tag folder sync" << endl;
@@ -64,6 +67,7 @@ int main (int argc, char ** argv) {
     ( "help,h", "print this help message")
     ( "database,m", po::value<string>(), "notmuch database")
     ( "keyword-to-tag,k", "sync keywords to tags")
+    ( "mtime", po::value<int>(), "only operate on files with modified after mtime when doing keyword-to-tag sync (unix time)")
     ( "tag-to-keyword,t", "sync tags to keywords")
     ( "query,q", po::value<string>(), "restrict which messages to sync with notmuch query")
     ( "dry-run,d", "do not apply any changes.")
@@ -134,6 +138,22 @@ int main (int argc, char ** argv) {
   only_add = (vm.count("only-add") > 0);
   only_remove = (vm.count("only-remove") > 0);
 
+  if (vm.count("mtime") > 0) {
+    if (direction != KEYWORD_TO_TAG) {
+      cerr << "error: the mtime argument only makes sense for keyword-to-tag sync direction" << endl;
+      exit (1);
+    }
+
+    mtime_set = true;
+    int mtime = vm["mtime"].as<int>();
+    time_t mtime_t = mtime;
+
+    only_after_mtime = from_time_t (mtime_t);
+
+    cout << "mtime: only operating messages with mtime newer than: " << to_simple_string(only_after_mtime) << endl;
+
+  }
+
   if (only_add && only_remove) {
     cerr << "only one of -a or -r can be specified at the same time" << endl;
     exit (1);
@@ -150,6 +170,7 @@ int main (int argc, char ** argv) {
   string revision_s = ss.str();
 
   time_t gt0 = clock ();
+  chrono::time_point<chrono::steady_clock> t0_c = chrono::steady_clock::now ();
 
   notmuch_query_t * query;
   query = notmuch_query_create (nm_db,
@@ -165,6 +186,7 @@ int main (int argc, char ** argv) {
   notmuch_message_t * message;
 
   int count = 0;
+  int count_changed = 0;
 
   for (;
        notmuch_messages_valid (messages);
@@ -178,6 +200,8 @@ int main (int argc, char ** argv) {
     vector<string> file_tags;
     vector<string> paths;
 
+    bool mtime_changed = false;
+
     // get source files {{{
     notmuch_filenames_t * nm_fnms = notmuch_message_get_filenames (message);
     for (;
@@ -186,12 +210,40 @@ int main (int argc, char ** argv) {
 
       const char * fnm = notmuch_filenames_get (nm_fnms);
 
+      /* only add file if mtime is newer than specified */
+      if (mtime_set) {
+        path p (fnm);
+        time_t last_write_t = last_write_time (p);
+
+        ptime last_write = from_time_t (last_write_t);
+
+        if (last_write >= only_after_mtime) {
+          mtime_changed = true;
+        }
+      }
+
       paths.push_back (fnm);
       if (verbose)
         cout << "* message file: " << fnm << endl;
     }
 
     notmuch_filenames_destroy (nm_fnms); // }}}
+
+    if (mtime_changed && mtime_set) {
+      if (verbose) {
+        cout << "=> message changed, checking.." << endl;
+      }
+
+    } else {
+      if (verbose) {
+        cout << "=> message _not_ changed, skipping.." << endl;
+      }
+
+      count++;
+      notmuch_message_destroy (message);
+      continue;
+
+    }
 
     /* get and test if keywords are consistent between all paths */
     bool consistent = keywords_consistency_check (paths, file_tags);
@@ -202,6 +254,8 @@ int main (int argc, char ** argv) {
       } else {
         /* possibly keep going? */
         cerr << "=> skipping message." << endl;
+        count++;
+        notmuch_message_destroy (message);
         continue;
       }
     }
@@ -262,10 +316,12 @@ int main (int argc, char ** argv) {
                       file_tags.end (),
                       back_inserter (rem));
 
+      bool changed = false;
 
       if (!only_remove) {
         if (add.size () > 0) {
           cout << "=> adding tags: ";
+          changed = true;
           for (auto t : add) cout << t << " ";
 
           if (dryrun) cout << "[dryrun]";
@@ -290,6 +346,7 @@ int main (int argc, char ** argv) {
       if (!only_add) {
         if (rem.size () > 0) {
           cout << "=> removing tags: ";
+          changed = true;
           for (auto t : rem) cout << t << " ";
 
           if (dryrun) cout << "[dryrun]";
@@ -311,6 +368,8 @@ int main (int argc, char ** argv) {
           }
         }
       }
+
+      if (changed) count_changed++;
 
       // }}}
     } else { /* tag to keyword mode {{{ */
@@ -396,6 +455,8 @@ int main (int argc, char ** argv) {
 
           write_tags (p, new_file_tags);
         }
+
+        count_changed++;
       }
     } // }}}
 
@@ -409,7 +470,9 @@ int main (int argc, char ** argv) {
 
   notmuch_database_close (nm_db);
 
-  cout << "=> done, checked: " << count << " messages in " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms." << endl;
+  chrono::duration<double> elapsed = chrono::steady_clock::now() - t0_c;
+
+  cout << "=> done, checked: " << count << " messages and changed: " << count_changed << " messages in " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms [cpu], " << elapsed.count() << " s [real time]." << endl;
 
   return 0;
 }
