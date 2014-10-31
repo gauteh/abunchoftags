@@ -149,9 +149,8 @@ vfd.close ()
 
 env = conf.Finish ()
 
-env.Program (source = 'tfsync.cc', target = 'tfsync')
 env.Program (source = [ 'keywsync.cc', 'spruce-imap-utils.c' ], target = 'keywsync')
-env.Alias ('build', ['tfsync', 'keywsync'])
+env.Alias ('build', ['keywsync'])
 
 nmenv = Environment (LIBS = ['notmuch'])
 nmenv.Program ('notmuch_get_revision', source = [ 'notmuch_get_revision.cc' ])
