@@ -138,6 +138,7 @@ libs   = ['notmuch',
 
 env.AppendUnique (LIBS = libs)
 env.AppendUnique (CPPFLAGS = ['-g', '-Wall', '-std=c++11', '-pthread'] )
+env.AppendUnique (CFLAGS = ['-g', '-Wall', ])
 
 # write version file
 print ("writing version.hh..")
@@ -146,12 +147,10 @@ vfd.write ("# pragma once\n")
 vfd.write ("# define GIT_DESC \"%s\"\n\n" % GIT_DESC)
 vfd.close ()
 
-env.Append (CPPPATH = 'src')
-
 env = conf.Finish ()
 
 env.Program (source = 'tfsync.cc', target = 'tfsync')
-env.Program (source = 'keywsync.cc', target = 'keywsync')
+env.Program (source = [ 'keywsync.cc', 'spruce-imap-utils.c' ], target = 'keywsync')
 env.Alias ('build', ['tfsync', 'keywsync'])
 
 nmenv = Environment (LIBS = ['notmuch'])

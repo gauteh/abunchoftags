@@ -43,6 +43,7 @@
 # include <notmuch.h>
 
 # include "keywsync.hh"
+# include "spruce-imap-utils.h"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -547,7 +548,7 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
     }
   }
 
-  string kws (x_keywords);
+  string kws (spruce_imap_utf7_utf8(x_keywords));
 
   if (more_verbose) {
     cout << "parsing keywords: " << kws << endl;
@@ -685,7 +686,9 @@ void write_tags (string path, vector<string> tags) { // {{{
     newh = newh + t;
   }
 
-  g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh.c_str());
+  char * newh_utf7 = spruce_imap_utf8_utf7 (newh.c_str());
+
+  g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh_utf7);
 
   char fname[80] = "/tmp/keywsync-XXXXXX";
   int tmpfd = mkstemp (fname);
