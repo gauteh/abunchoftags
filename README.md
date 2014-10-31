@@ -69,7 +69,7 @@ maildir with the remote maildir:
 > removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
 
 
-[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels
-[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu
-[2] Someone have any documentation anywhere?
+[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels  
+[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu  
+[2] Someone have any documentation anywhere?  
 
