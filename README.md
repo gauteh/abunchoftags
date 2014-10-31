@@ -69,8 +69,15 @@ maildir with the remote maildir:
 > removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
 > Use the --mtime query to filter out unchanged files.
 
+## Timing
 
-[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels  
-[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu  
-[2] Someone have any documentation anywhere?  
+Running a full keyword-to-tag sync on a Macbook Pro with around 55k messages
+took 1m48s and used about 108MB of memory.
+
+Running a full tag-to-keyword check on the same message base with 3 changed messages
+took about 1m5s and 100MB of memory.
+
+[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels
+[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu
+[2] Someone have any documentation anywhere?
 

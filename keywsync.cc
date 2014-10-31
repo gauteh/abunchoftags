@@ -395,12 +395,12 @@ int main (int argc, char ** argv) {
             if (dryrun) cout << "[dryrun]";
             cout << endl;
           }
+
+          for (auto t : add)
+            new_file_tags.push_back (t);
+
+          changed = true;
         }
-
-        for (auto t : add)
-          new_file_tags.push_back (t);
-
-        changed = true;
       }
 
       sort (new_file_tags.begin (), new_file_tags.end());
@@ -414,16 +414,16 @@ int main (int argc, char ** argv) {
             if (dryrun) cout << "[dryrun]";
             cout << endl;
           }
-        }
 
-        vector<string> diff;
-        set_difference (new_file_tags.begin(),
-                        new_file_tags.end (),
-                        rem.begin (),
-                        rem.end (),
-                        back_inserter (diff));
-        new_file_tags = diff;
-        changed = true;
+          vector<string> diff;
+          set_difference (new_file_tags.begin(),
+                          new_file_tags.end (),
+                          rem.begin (),
+                          rem.end (),
+                          back_inserter (diff));
+          new_file_tags = diff;
+          changed = true;
+        }
       }
 
       /* get file tags with normally ignored kws */
