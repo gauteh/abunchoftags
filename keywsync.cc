@@ -662,7 +662,7 @@ void write_tags (string path, vector<string> tags) { // {{{
   /* reverse map */
   for (auto &t : tags) {
     for (auto rep : replace_chars) {
-      replace (t.begin(), t.end(), rep.first, rep.second);
+      replace (t.begin(), t.end(), rep.second, rep.first);
     }
 
     auto fnd = find_if (map_tags.begin(), map_tags.end (),
@@ -708,7 +708,14 @@ void write_tags (string path, vector<string> tags) { // {{{
   }
 
   if (!dryrun) {
-    rename (fname, path);
+    try {
+      rename (fname, path);
+    } catch (boost::filesystem::filesystem_error &ex) {
+      /* in case of cross-device try regular copy and remove */
+      unlink (path.c_str());
+      copy (fname, path);
+      unlink (fname);
+    }
   } else {
     cout << "dryrun: new file located in: " << fname << endl;
   }

@@ -58,6 +58,8 @@ maildir with the remote maildir:
    remote. According to the offlineimap documentation [0] the X-Keywords flags
    are synchronized in the same way as maildir flags (whatever that means [2]).
 
+1. Run `notmuch new` to detect any new or deleted files, or and renames.
+
 1. Synchronize tags remote-to-local (`-k`) using a `query` that filters out anything
    but the maildir in question. Use the `--mtime` flag to only sync messages that match
    the `query` and are modified after offlineimap was run: `echo $before_offlineimap`.
