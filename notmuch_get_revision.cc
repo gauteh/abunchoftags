@@ -20,7 +20,7 @@ int main (int argc, char ** argv) {
     return 1;
   }
 
-  int revision = notmuch_database_get_revision (db);
+  unsigned long revision = notmuch_database_get_revision (db);
 
   cout << revision << endl;
 
