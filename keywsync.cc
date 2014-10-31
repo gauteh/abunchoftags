@@ -49,7 +49,7 @@ using namespace boost::filesystem;
 using namespace boost::posix_time;
 
 int main (int argc, char ** argv) {
-  cout << "** tag folder sync" << endl;
+  cout << "** keyword <-> tag sync" << endl;
 
   /* options */
   namespace po = boost::program_options;
@@ -63,6 +63,7 @@ int main (int argc, char ** argv) {
     ( "query,q", po::value<string>(), "restrict which messages to sync with notmuch query")
     ( "dry-run,d", "do not apply any changes.")
     ( "verbose,v", "verbose")
+    ( "more-verbose", "more verbosity")
     ( "paranoid,p", "be paranoid, fail easily.")
     ( "only-add,a", "only add tags")
     ( "only-remove,r", "only remove tags");
@@ -124,7 +125,8 @@ int main (int argc, char ** argv) {
     cout << "=> note: real-mode, not dry-run!" << endl;
   }
 
-  verbose = (vm.count("verbose") > 0);
+  more_verbose = (vm.count("more-verbose") > 0);
+  verbose = (vm.count("verbose") > 0) || more_verbose;
   paranoid = (vm.count("paranoid") > 0);
   only_add = (vm.count("only-add") > 0);
   only_remove = (vm.count("only-remove") > 0);
@@ -185,7 +187,7 @@ int main (int argc, char ** argv) {
 
     message = notmuch_messages_get (messages);
 
-    if (verbose)
+    if (more_verbose)
       cout << "==> working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
 
     vector<string> file_tags;
@@ -214,26 +216,28 @@ int main (int argc, char ** argv) {
       }
 
       paths.push_back (fnm);
-      if (verbose)
+      if (more_verbose)
         cout << "* message file: " << fnm << endl;
     }
 
     notmuch_filenames_destroy (nm_fnms); // }}}
 
-    if (mtime_changed && mtime_set) {
-      if (verbose) {
-        cout << "=> message changed, checking.." << endl;
+    if (mtime_set) {
+      if (mtime_changed) {
+        if (verbose) {
+          cout << "=> " << notmuch_message_get_message_id (message) << " changed, checking.." << endl;
+        }
+
+      } else {
+        if (more_verbose) {
+          cout << "=> message _not_ changed, skipping.." << endl;
+        }
+
+        count++;
+        notmuch_message_destroy (message);
+        continue;
+
       }
-
-    } else {
-      if (verbose) {
-        cout << "=> message _not_ changed, skipping.." << endl;
-      }
-
-      count++;
-      notmuch_message_destroy (message);
-      continue;
-
     }
 
     /* get and test if keywords are consistent between all paths */
@@ -278,12 +282,14 @@ int main (int argc, char ** argv) {
     db_tags = diff;
 
 
-    cout << "* message (" << count << "), file tags (" << file_tags.size()
-         << "): ";
-    for (auto t : file_tags) cout << t << " ";
-    cout << ", db tags (" << db_tags.size() << "): ";
-    for (auto t : db_tags) cout << t << " ";
-    cout << endl;
+    if (verbose) {
+      cout << "* message (" << count << "), file tags (" << file_tags.size()
+           << "): ";
+      for (auto t : file_tags) cout << t << " ";
+      cout << ", db tags (" << db_tags.size() << "): ";
+      for (auto t : db_tags) cout << t << " ";
+      cout << endl;
+    }
 
     if (direction == KEYWORD_TO_TAG) { // {{{
 
@@ -311,12 +317,14 @@ int main (int argc, char ** argv) {
 
       if (!only_remove) {
         if (add.size () > 0) {
-          cout << "=> adding tags: ";
           changed = true;
-          for (auto t : add) cout << t << " ";
+          if (more_verbose) {
+            cout << "=> adding tags: ";
+            for (auto t : add) cout << t << " ";
 
-          if (dryrun) cout << "[dryrun]";
-          cout << endl;
+            if (dryrun) cout << "[dryrun]";
+            cout << endl;
+          }
 
           if (!dryrun) {
             for (auto t : add) {
@@ -336,12 +344,15 @@ int main (int argc, char ** argv) {
 
       if (!only_add) {
         if (rem.size () > 0) {
-          cout << "=> removing tags: ";
           changed = true;
-          for (auto t : rem) cout << t << " ";
 
-          if (dryrun) cout << "[dryrun]";
-          cout << endl;
+          if (more_verbose) {
+            cout << "=> removing tags: ";
+            for (auto t : rem) cout << t << " ";
+
+            if (dryrun) cout << "[dryrun]";
+            cout << endl;
+          }
 
           if (!dryrun) {
             for (auto t : rem) {
@@ -388,11 +399,13 @@ int main (int argc, char ** argv) {
 
       if (!only_remove) {
         if (add.size () > 0) {
-          cout << "=> adding tags: ";
-          for (auto t : add) cout << t << " ";
+          if (more_verbose) {
+            cout << "=> adding tags: ";
+            for (auto t : add) cout << t << " ";
 
-          if (dryrun) cout << "[dryrun]";
-          cout << endl;
+            if (dryrun) cout << "[dryrun]";
+            cout << endl;
+          }
         }
 
         for (auto t : add)
@@ -405,11 +418,13 @@ int main (int argc, char ** argv) {
 
       if (!only_add) {
         if (rem.size () > 0) {
-          cout << "=> removing tags: ";
-          for (auto t : rem) cout << t << " ";
+          if (more_verbose) {
+            cout << "=> removing tags: ";
+            for (auto t : rem) cout << t << " ";
 
-          if (dryrun) cout << "[dryrun]";
-          cout << endl;
+            if (dryrun) cout << "[dryrun]";
+            cout << endl;
+          }
         }
 
         vector<string> diff;
@@ -435,7 +450,7 @@ int main (int argc, char ** argv) {
 
       if (change) {
         for (string p : paths) {
-          if (verbose) {
+          if (more_verbose) {
             cout << "old tags: ";
             for (auto t : file_tags) cout << t << " ";
             cout << endl;
@@ -453,7 +468,7 @@ int main (int argc, char ** argv) {
 
     notmuch_message_destroy (message);
 
-    if (verbose)
+    if (more_verbose)
       cout << "==> message (" << count << ") done." << endl;
 
     count++;
@@ -536,7 +551,7 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
 
   string kws (x_keywords);
 
-  if (verbose) {
+  if (more_verbose) {
     cout << "parsing keywords: " << kws << endl;
   }
 
@@ -566,7 +581,7 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
 
   notmuch_message_destroy (message);
 
-  if (verbose) {
+  if (more_verbose) {
     cout << "tags: ";
     for (auto t : file_tags) {
       cout << t << " ";
@@ -592,7 +607,7 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
 
   sort (file_tags.begin (), file_tags.end());
 
-  if (verbose) {
+  if (more_verbose) {
     cout << "tags after map: ";
     for (auto t : file_tags) {
       cout << "'" <<  t << "' ";
@@ -612,7 +627,7 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
 
     file_tags = diff;
 
-    if (verbose) {
+    if (more_verbose) {
       cout << "tags after ignore: ";
       for (auto t : file_tags) {
         cout << t << " ";
@@ -639,9 +654,11 @@ void write_tags (string path, vector<string> tags) { // {{{
 
   const char * xkeyw = g_mime_object_get_header (GMIME_OBJECT(message), "X-Keywords");
   if (xkeyw != NULL) {
-    cout << "=> current xkeywords: " << xkeyw << endl;
+    if (more_verbose)
+      cout << "=> current xkeywords: " << xkeyw << endl;
   } else {
-    cout << "=> current xkeywords: non-existent." << endl;
+    if (more_verbose)
+      cout << "=> current xkeywords: non-existent." << endl;
   }
 
   /* reverse map */
@@ -673,11 +690,18 @@ void write_tags (string path, vector<string> tags) { // {{{
   if (!dryrun) {
     g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh.c_str());
 
-    GMimeStream * out = g_mime_stream_file_new_for_path ("/tmp/testmsg", "w");
+    char fname[80] = "keywsync-XXXXXX";
+    int tmpfd = mkstemp (fname);
+    FILE * tmpf = fdopen (tmpfd, "w");
+    GMimeStream * out = g_mime_stream_file_new (tmpf);
     g_mime_object_write_to_stream (GMIME_OBJECT(message), out);
 
     g_mime_stream_flush (out);
     g_mime_stream_close (out);
+
+    cout << "file: " << fname << " created.." << endl;
+
+    /* do move */
   }
 
   g_object_unref (message);

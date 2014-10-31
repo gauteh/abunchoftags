@@ -71,6 +71,7 @@ bool  mtime_set = false;
 ptime only_after_mtime;
 
 bool verbose = false;
+bool more_verbose = false;
 bool dryrun  = false;
 bool paranoid = false;
 bool only_add = false;
