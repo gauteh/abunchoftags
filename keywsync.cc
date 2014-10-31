@@ -6,22 +6,13 @@
  *
  * tag-to-keyword:
  *
- *    o. run through all messages that have been changed since
- *       a given revision.
- *
- *    o. check if they have all the keywords they should, or if
- *       keywords should be deleted where there is no corresponding tag anymore.
+ *   o. check if the messages in the query have a matching X-Keywords header
+ *      to the list of tags. if not, update and re-write the message.
  *
  * keyword-to-tag:
  *
- *    o. run through all messages that have been changed since
- *       a given revision.
- *
- *    o. check if they have all the tags they should depending on the
- *       keywords they have.
- *
- *    o. check if they have tags they should no longer have when they
- *       no longer have keywords.
+ *   o. check if the messages in the query have matching tags to the
+ *      X-Keywords header. if not, update the tags in the notmuch db.
  *
  *
  * Usage:
