@@ -1,3 +1,6 @@
+/* return the current datbase revision, depends on the patches in
+ * id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu
+ */
 # include <iostream>
 # include <notmuch.h>
 
