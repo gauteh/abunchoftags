@@ -44,8 +44,8 @@ Do both in one go:
 Assuming you have fully synced database and you want to synchronize your
 maildir with the remote maildir:
 
-  Note: The query needs to filter messages so that only the messages of the
-  GMail maildir are tested.
+>  Note: The query needs to filter messages so that only the messages of the
+>  GMail maildir are tested.
 
 1. Synchronize tags local-to-remote (`-t`), now all tag changes done in the
    notmuch db are synchronized with the message files (preferably using a
@@ -65,10 +65,11 @@ maildir with the remote maildir:
 1. Store the current database time for the next `lastmod` search in the local-to-remote
    step of your next search: `$ notmuch_get_revision /path/to/db`.
 
-Note: `notmuch new` does not detect message changes that do not include a file addition,
-removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
+> Note: `notmuch new` does not detect message changes that do not include a file addition,
+> removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
 
-[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels
-[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu
-[2] Someone have any documentation anywhere?
+
+[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels  
+[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu  
+[2] Someone have any documentation anywhere?  
 
