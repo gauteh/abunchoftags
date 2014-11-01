@@ -25,9 +25,7 @@
  *
  */
 
-# include <boost/program_options.hpp>
-# include <boost/filesystem.hpp>
-# include <boost/date_time/posix_time/posix_time.hpp>
+# include "keywsync.hh"
 
 # include <iostream>
 # include <string>
@@ -39,9 +37,12 @@
 # include <glibmm.h>
 # include <gmime/gmime.h>
 
+# include <boost/program_options.hpp>
+# include <boost/filesystem.hpp>
+# include <boost/date_time/posix_time/posix_time.hpp>
+
 # include <notmuch.h>
 
-# include "keywsync.hh"
 # include "spruce-imap-utils.h"
 
 using namespace std;
@@ -190,8 +191,8 @@ int main (int argc, char ** argv) {
     if (more_verbose)
       cout << "==> working on message (" << count << " of " << total_messages << "): " << notmuch_message_get_message_id (message) << endl;
 
-    vector<string> file_tags;
-    vector<string> paths;
+    vector<ustring> file_tags;
+    vector<ustring> paths;
 
     bool mtime_changed = false;
 
@@ -256,7 +257,7 @@ int main (int argc, char ** argv) {
     }
 
     /* get tags from db */
-    vector<string> db_tags;
+    vector<ustring> db_tags;
     notmuch_tags_t * nm_tags = notmuch_message_get_tags (message);
     for (;
          notmuch_tags_valid (nm_tags);
@@ -272,7 +273,7 @@ int main (int argc, char ** argv) {
     sort (db_tags.begin (), db_tags.end());
 
     /* remove ignored tags */
-    vector<string> diff;
+    vector<ustring> diff;
     set_difference (db_tags.begin (),
                     db_tags.end (),
                     ignore_tags.begin (),
@@ -290,7 +291,7 @@ int main (int argc, char ** argv) {
 
 
       /* tags to add */
-      vector<string> add;
+      vector<ustring> add;
       set_difference (file_tags.begin (),
                       file_tags.end (),
                       db_tags.begin (),
@@ -299,7 +300,7 @@ int main (int argc, char ** argv) {
 
 
       /* tags to remove */
-      vector<string> rem;
+      vector<ustring> rem;
       set_difference (db_tags.begin (),
                       db_tags.end (),
                       file_tags.begin (),
@@ -368,7 +369,7 @@ int main (int argc, char ** argv) {
     } else { /* tag to keyword mode {{{ */
 
       /* tags to add */
-      vector<string> add;
+      vector<ustring> add;
       set_difference (db_tags.begin (),
                       db_tags.end (),
                       file_tags.begin (),
@@ -377,14 +378,14 @@ int main (int argc, char ** argv) {
 
 
       /* tags to remove */
-      vector<string> rem;
+      vector<ustring> rem;
       set_difference (file_tags.begin (),
                       file_tags.end (),
                       db_tags.begin (),
                       db_tags.end (),
                       back_inserter (rem));
 
-      vector<string> new_file_tags = file_tags;
+      vector<ustring> new_file_tags = file_tags;
 
       if (!only_remove) {
         if (add.size () > 0) {
@@ -415,7 +416,7 @@ int main (int argc, char ** argv) {
             cout << endl;
           }
 
-          vector<string> diff;
+          vector<ustring> diff;
           set_difference (new_file_tags.begin(),
                           new_file_tags.end (),
                           rem.begin (),
@@ -428,7 +429,7 @@ int main (int argc, char ** argv) {
 
       /* get file tags with normally ignored kws */
       auto file_tags_all = get_keywords (paths[0], true);
-      vector<string> diff;
+      vector<ustring> diff;
       set_difference (file_tags_all.begin(),
                       file_tags_all.end (),
                       file_tags.begin (),
@@ -438,7 +439,7 @@ int main (int argc, char ** argv) {
         new_file_tags.push_back (t);
 
       if (changed) {
-        for (string p : paths) {
+        for (ustring p : paths) {
           if (more_verbose) {
             cout << "old tags: ";
             for (auto t : file_tags) cout << t << " ";
@@ -481,14 +482,14 @@ int main (int argc, char ** argv) {
   return 0;
 }
 
-bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tags) { // {{{
+bool keywords_consistency_check (vector<ustring> &paths, vector<ustring> &file_tags) { // {{{
   /* check if all source files for one message have the same tags, outputs
    * all discovered tags to file_tags */
 
   bool first = true;
   bool valid = true;
 
-  for (string & p : paths) {
+  for (ustring & p : paths) {
     auto t = get_keywords (p, false);
 
     if (first) {
@@ -496,7 +497,7 @@ bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tag
       file_tags = t;
     } else {
 
-      vector<string> diff;
+      vector<ustring> diff;
       set_difference (t.begin (),
                       t.end (),
                       file_tags.begin (),
@@ -518,11 +519,11 @@ bool keywords_consistency_check (vector<string> &paths, vector<string> &file_tag
   return valid;
 } // }}}
 
-vector<string> get_keywords (string p, bool dont_ignore) { // {{{
+vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
   /* get the X-Keywords header from a message and return
    * a _sorted_ vector of strings with the keywords. */
 
-  vector<string> file_tags;
+  vector<ustring> file_tags;
 
   /* read X-Keywords header */
   notmuch_message_t * message;
@@ -547,20 +548,20 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
     }
   }
 
-  string kws (spruce_imap_utf7_utf8(x_keywords));
+  ustring kws (spruce_imap_utf7_utf8(x_keywords));
 
   if (more_verbose) {
     cout << "parsing keywords: " << kws << endl;
   }
 
   if (enable_split_chars) {
-    vector<string> initial_tags;
+    vector<ustring> initial_tags;
     split_string (initial_tags, kws, ",");
 
     /* split tags that need splitting into separate tags */
-    for (string s : split_chars) {
+    for (ustring s : split_chars) {
       for (auto t : initial_tags) {
-        vector<string> k;
+        vector<ustring> k;
         split_string (k, t, s);
 
         for (auto kt : k) {
@@ -588,13 +589,13 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
   }
 
   /* do map */
-  for (auto &t : file_tags) {
+  for (ustring &t : file_tags) {
     for (auto rep : replace_chars) {
       replace (t.begin(), t.end(), rep.first, rep.second);
     }
 
     auto fnd = find_if (map_tags.begin(), map_tags.end (),
-        [&](pair<string,string> p) {
+        [&](pair<ustring,ustring> p) {
           return (t == p.first);
         });
 
@@ -615,7 +616,7 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
 
   if (!dont_ignore) {
     /* remove ignored */
-    vector<string> diff;
+    vector<ustring> diff;
     set_difference (file_tags.begin (),
                     file_tags.end (),
                     ignore_tags.begin (),
@@ -637,7 +638,7 @@ vector<string> get_keywords (string p, bool dont_ignore) { // {{{
   return file_tags;
 } // }}}
 
-void write_tags (string path, vector<string> tags) { // {{{
+void write_tags (ustring path, vector<ustring> tags) { // {{{
   /* do the reverse replacements */
 
   if (enable_split_chars) {
@@ -666,7 +667,7 @@ void write_tags (string path, vector<string> tags) { // {{{
     }
 
     auto fnd = find_if (map_tags.begin(), map_tags.end (),
-        [&](pair<string,string> p) {
+        [&](pair<ustring,ustring> p) {
           return (t == p.second);
         });
 
@@ -677,7 +678,7 @@ void write_tags (string path, vector<string> tags) { // {{{
 
   sort (tags.begin (), tags.end());
 
-  string newh;
+  ustring newh;
   bool first = true;
   for (auto t : tags) {
     if (!first) newh = newh + ",";
@@ -709,11 +710,11 @@ void write_tags (string path, vector<string> tags) { // {{{
 
   if (!dryrun) {
     try {
-      rename (fname, path);
+      rename (fname, path.c_str());
     } catch (boost::filesystem::filesystem_error &ex) {
       /* in case of cross-device try regular copy and remove */
       unlink (path.c_str());
-      copy (fname, path);
+      copy (fname, path.c_str());
       unlink (fname);
     }
   } else {
@@ -732,7 +733,7 @@ template<class T> bool has (vector<T> v, T e) {
   return (find(v.begin (), v.end (), e) != v.end ());
 }
 
-void split_string (vector<string> & tokens, string str, string delim) {
+void split_string (vector<ustring> & tokens, ustring str, ustring delim) {
 
   tokens = Glib::Regex::split_simple(delim, str);
 

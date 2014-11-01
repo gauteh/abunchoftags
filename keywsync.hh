@@ -2,6 +2,7 @@
 
 # include <vector>
 # include <string>
+# include <glibmm.h>
 
 # include <boost/filesystem.hpp>
 # include <boost/date_time/posix_time/posix_time.hpp>
@@ -12,6 +13,8 @@ using namespace boost::posix_time;
 
 # include <notmuch.h>
 
+# define ustring Glib::ustring
+
 notmuch_database_t * setup_db (const char *);
 
 /* tags to ignore from syncing (_must_ be sorted!)
@@ -20,7 +23,7 @@ notmuch_database_t * setup_db (const char *);
  * by maildirflags.
  *
  */
-const vector<string> ignore_tags = {
+const vector<ustring> ignore_tags = {
   "draft",
   "flagged",
   "important",
@@ -33,7 +36,7 @@ const vector<string> ignore_tags = {
 };
 
 /* map keyword to tag, done before ignore_tags */
-const list<pair<string,string>> map_tags {
+const list<pair<ustring,ustring>> map_tags {
   { "\\Important", "important" },
   { "\\Inbox", "inbox" },
   { "\\Muted", "muted" },
@@ -49,15 +52,15 @@ const list<pair<char,char>> replace_chars {
 
 /* split chars, done before replace chars */
 bool enable_split_chars = false;
-const vector<string> split_chars {
+const vector<ustring> split_chars {
   "/",
 };
 
-bool keywords_consistency_check (vector<string> &, vector<string> &);
-vector<string> get_keywords (string p, bool);
-void split_string (vector<string> &, string, string);
+bool keywords_consistency_check (vector<ustring> &, vector<ustring> &);
+vector<ustring> get_keywords (ustring p, bool);
+void split_string (vector<ustring> &, ustring, ustring);
 
-void write_tags (string p, vector<string> tags);
+void write_tags (ustring p, vector<ustring> tags);
 
 template<class T> bool has (vector<T>, T);
 
@@ -68,7 +71,7 @@ enum Direction {
 };
 
 Direction direction;
-string    inputquery;
+ustring    inputquery;
 
 bool  mtime_set = false;
 ptime only_after_mtime;
@@ -80,7 +83,7 @@ bool paranoid = false;
 bool only_add = false;
 bool only_remove = false;
 
-string db_path;
+ustring db_path;
 notmuch_database_t * nm_db;
 
 
