@@ -293,6 +293,9 @@ int main (int argc, char ** argv) {
       /* check maildir flags */
       if (maildir_flags) {
         /* may change path of file */
+        if (more_verbose) {
+          cout << "checking maildir flags.." << endl;
+        }
         notmuch_message_maildir_flags_to_tags (message);
       }
 
@@ -459,12 +462,16 @@ int main (int argc, char ** argv) {
           write_tags (p, new_file_tags);
         }
 
-        /* check maildir flags */
-        if (maildir_flags) {
-          notmuch_message_tags_to_maildir_flags (message);
-        }
 
         count_changed++;
+      }
+
+      /* check maildir flags */
+      if (maildir_flags) {
+        if (more_verbose) {
+          cout << "checking maildir flags.." << endl;
+        }
+        notmuch_message_tags_to_maildir_flags (message);
       }
     } // }}}
 
