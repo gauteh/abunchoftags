@@ -509,6 +509,12 @@ bool keywords_consistency_check (vector<ustring> &paths, vector<ustring> &file_t
   bool valid = true;
 
   for (ustring & p : paths) {
+    path pp (p);
+    if (!exists (pp)) {
+      cerr << "file does not exist: db out of sync: " << p << endl;
+      exit (1);
+    }
+
     auto t = get_keywords (p, false);
 
     if (first) {
@@ -666,7 +672,7 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
   return file_tags;
 } // }}}
 
-void write_tags (ustring path, vector<ustring> tags) { // {{{
+void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   /* do the reverse replacements */
 
   if (enable_split_chars) {
@@ -674,7 +680,7 @@ void write_tags (ustring path, vector<ustring> tags) { // {{{
     exit (1);
   }
 
-  GMimeStream * f = g_mime_stream_file_new_for_path (path.c_str(),
+  GMimeStream * f = g_mime_stream_file_new_for_path (msg_path.c_str(),
       "r");
   GMimeParser * parser = g_mime_parser_new_with_stream (f);
   GMimeMessage * message = g_mime_parser_construct_message (parser);
@@ -719,6 +725,10 @@ void write_tags (ustring path, vector<ustring> tags) { // {{{
 
   char * newh_utf7 = spruce_imap_utf8_utf7 (newh.c_str());
 
+  if (more_verbose) {
+    cout << "=> writing new x-keywords: " << newh_utf7 << endl;
+  }
+
   g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh_utf7);
 
   char fname[80] = "/tmp/keywsync-XXXXXX";
@@ -736,25 +746,28 @@ void write_tags (ustring path, vector<ustring> tags) { // {{{
 
   /* do move */
   if (verbose) {
-    cout << "moving " << fname << " to " << path << endl;
-  }
-
-  if (!dryrun) {
-    try {
-      rename (fname, path.c_str());
-    } catch (boost::filesystem::filesystem_error &ex) {
-      /* in case of cross-device try regular copy and remove */
-      unlink (path.c_str());
-      copy (fname, path.c_str());
-      unlink (fname);
-    }
-  } else {
-    cout << "dryrun: new file located in: " << fname << endl;
+    cout << "moving " << fname << " to " << msg_path << endl;
   }
 
   g_object_unref (message);
   g_object_unref (parser);
   g_mime_stream_close (f);
+
+  if (!dryrun) {
+    try {
+      rename (path(fname), path(msg_path.c_str()));
+    } catch (boost::filesystem::filesystem_error &ex) {
+      /* in case of cross-device try regular copy and remove */
+      if (more_verbose) {
+        cerr << "moving, rename did not work: doing unlink,copy,unlink." << endl;
+      }
+      unlink (msg_path.c_str());
+      copy (fname, msg_path.c_str());
+      unlink (fname);
+    }
+  } else {
+    cout << "dryrun: new file located in: " << fname << endl;
+  }
 
 } // }}}
 
