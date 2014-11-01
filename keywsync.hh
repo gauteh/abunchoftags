@@ -36,6 +36,7 @@ const vector<string> ignore_tags = {
 const list<pair<string,string>> map_tags {
   { "\\Important", "important" },
   { "\\Inbox", "inbox" },
+  { "\\Muted", "muted" },
   { "\\Sent", "sent" },
   { "\\Spam", "spam" },
   { "\\Starred", "flagged" },
