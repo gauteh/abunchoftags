@@ -38,6 +38,7 @@ const list<pair<string,string>> map_tags {
   { "\\Inbox", "inbox" },
   { "\\Sent", "sent" },
   { "\\Spam", "spam" },
+  { "\\Starred", "flagged" },
 };
 
 /* replace chars, done before map keyword to tag */
