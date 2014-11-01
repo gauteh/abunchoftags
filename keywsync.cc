@@ -28,6 +28,7 @@
 # include "keywsync.hh"
 
 # include <iostream>
+# include <fstream>
 # include <string>
 # include <sstream>
 # include <vector>
@@ -731,7 +732,7 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
 
   g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh_utf7);
 
-  char fname[80] = "/tmp/keywsync-XXXXXX";
+  char fname[1024] = "/tmp/keywsync-XXXXXX";
   int tmpfd = mkstemp (fname);
   FILE * tmpf = fdopen (tmpfd, "w");
   GMimeStream * out = g_mime_stream_file_new (tmpf);
@@ -744,9 +745,9 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
     cout << "new file written to: " << fname << endl;
   }
 
-  /* do move */
+  /* replace contents */
   if (verbose) {
-    cout << "moving " << fname << " to " << msg_path << endl;
+    cout << "replacing contents from file " << fname << " into " << msg_path << endl;
   }
 
   g_object_unref (message);
@@ -754,17 +755,20 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   g_mime_stream_close (f);
 
   if (!dryrun) {
-    try {
-      rename (path(fname), path(msg_path.c_str()));
-    } catch (boost::filesystem::filesystem_error &ex) {
-      /* in case of cross-device try regular copy and remove */
-      if (more_verbose) {
-        cerr << "moving, rename did not work: doing unlink,copy,unlink." << endl;
-      }
-      unlink (msg_path.c_str());
-      copy (fname, msg_path.c_str());
-      unlink (fname);
-    }
+    /* we have to replace the contents of the message file while
+     * not updating the creation time to prevent offlineimap from
+     * treating the file as a new one (and the previous a deleted one).
+     */
+
+    ifstream i (fname, ios::binary);
+    ofstream o (msg_path.c_str(), ios::binary | ofstream::trunc);
+
+    o << i.rdbuf ();
+    i.close ();
+    o.close ();
+
+    unlink (fname);
+
   } else {
     cout << "dryrun: new file located in: " << fname << endl;
   }
