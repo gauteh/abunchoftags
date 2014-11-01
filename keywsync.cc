@@ -58,6 +58,7 @@ int main (int argc, char ** argv) {
   desc.add_options ()
     ( "help,h", "print this help message")
     ( "database,m", po::value<string>(), "notmuch database")
+    ( "flags,f", "make notmuch sync maildir flags while passing through" )
     ( "keyword-to-tag,k", "sync keywords to tags")
     ( "mtime", po::value<int>(), "only operate on files with modified after mtime when doing keyword-to-tag sync (unix time)")
     ( "tag-to-keyword,t", "sync tags to keywords")
@@ -131,6 +132,7 @@ int main (int argc, char ** argv) {
   paranoid = (vm.count("paranoid") > 0);
   only_add = (vm.count("only-add") > 0);
   only_remove = (vm.count("only-remove") > 0);
+  maildir_flags = (vm.count("flags") > 0);
 
   if (vm.count("mtime") > 0) {
     if (direction != KEYWORD_TO_TAG) {
@@ -286,8 +288,13 @@ int main (int argc, char ** argv) {
     bool changed = false;
 
     if (direction == KEYWORD_TO_TAG) { // {{{
-
       /* keyword to tag mode */
+
+      /* check maildir flags */
+      if (maildir_flags) {
+        /* may change path of file */
+        notmuch_message_maildir_flags_to_tags (message);
+      }
 
 
       /* tags to add */
@@ -452,6 +459,11 @@ int main (int argc, char ** argv) {
           write_tags (p, new_file_tags);
         }
 
+        /* check maildir flags */
+        if (maildir_flags) {
+          notmuch_message_tags_to_maildir_flags (message);
+        }
+
         count_changed++;
       }
     } // }}}
@@ -591,7 +603,10 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
   /* do map */
   for (ustring &t : file_tags) {
     for (auto rep : replace_chars) {
-      replace (t.begin(), t.end(), rep.first, rep.second);
+      ustring::size_type f = t.find (rep.first);
+      if (f != ustring::npos) {
+        t.replace (f, 1, 1, rep.second);
+      }
     }
 
     auto fnd = find_if (map_tags.begin(), map_tags.end (),
@@ -663,7 +678,10 @@ void write_tags (ustring path, vector<ustring> tags) { // {{{
   /* reverse map */
   for (auto &t : tags) {
     for (auto rep : replace_chars) {
-      replace (t.begin(), t.end(), rep.second, rep.first);
+      ustring::size_type f = t.find (rep.second);
+      if (f != ustring::npos) {
+        t.replace (f, 1, 1, rep.first);
+      }
     }
 
     auto fnd = find_if (map_tags.begin(), map_tags.end (),

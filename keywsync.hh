@@ -24,7 +24,9 @@ notmuch_database_t * setup_db (const char *);
  *
  */
 const vector<ustring> ignore_tags = {
+  "attachment",
   "draft",
+  "encrypted"
   "flagged",
   "important",
   "new",
@@ -37,12 +39,14 @@ const vector<ustring> ignore_tags = {
 
 /* map keyword to tag, done before ignore_tags */
 const list<pair<ustring,ustring>> map_tags {
+  { "\\Draft", "draft" },
   { "\\Important", "important" },
   { "\\Inbox", "inbox" },
+  { "\\Junk", "spam" },
   { "\\Muted", "muted" },
   { "\\Sent", "sent" },
-  { "\\Spam", "spam" },
   { "\\Starred", "flagged" },
+  { "\\Trash", "deleted" },
 };
 
 /* replace chars, done before map keyword to tag */
@@ -82,6 +86,7 @@ bool dryrun  = false;
 bool paranoid = false;
 bool only_add = false;
 bool only_remove = false;
+bool maildir_flags = false;
 
 ustring db_path;
 notmuch_database_t * nm_db;

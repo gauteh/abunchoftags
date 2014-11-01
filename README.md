@@ -83,3 +83,10 @@ took about 1m5s and 100MB of memory.
 [1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu
 [2] Someone have any documentation anywhere?
 
+## References
+
+Access to GMail labels via IMAP extensions: https://developers.google.com/gmail/imap_extensions#access_to_gmail_labels_x-gm-labels
+Commit in OfflineIMAP for GMail label support: https://github.com/OfflineIMAP/offlineimap/commit/0e4afa913253c43409e6a32a6b6e11e8b03ed3d9
+Original patch for OfflineIMAP: http://thread.gmane.org/gmane.mail.imap.offlineimap.general/5943/focus=5970
+Special tags for notmuch: http://notmuchmail.org/special-tags/
+
