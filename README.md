@@ -73,7 +73,7 @@ maildir with the remote maildir:
    but the maildir in question. Use the `--mtime` flag to only sync messages that match
    the `query` and are modified after offlineimap was run: `echo $before_offlineimap`.
 
-1. Store the current database time for the next `lastmod` search in the local-to-remote
+1. Store the current database revision for the next `lastmod` search in the local-to-remote
    step of your next search: `$ notmuch_get_revision /path/to/db`.
 
 > Note: `notmuch new` does not detect message changes that do not include a file addition,

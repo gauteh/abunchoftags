@@ -319,7 +319,7 @@ int main (int argc, char ** argv) {
           changed = true;
           if (more_verbose) {
             cout << "=> adding tags: ";
-            for (auto t : add) cout << t << " ";
+            for (auto t : add) cout << t.raw() << " ";
 
             if (dryrun) cout << "[dryrun]";
             cout << endl;
@@ -332,7 +332,7 @@ int main (int argc, char ** argv) {
                   t.c_str());
 
               if (s != NOTMUCH_STATUS_SUCCESS) {
-                cerr << "error: could not add tag " << t << " to message." << endl;
+                cerr << "error: could not add tag " << t.raw() << " to message." << endl;
                 exit (1);
               }
 
@@ -347,7 +347,7 @@ int main (int argc, char ** argv) {
 
           if (more_verbose) {
             cout << "=> removing tags: ";
-            for (auto t : rem) cout << t << " ";
+            for (auto t : rem) cout << t.raw() << " ";
 
             if (dryrun) cout << "[dryrun]";
             cout << endl;
@@ -360,7 +360,7 @@ int main (int argc, char ** argv) {
                   t.c_str());
 
               if (s != NOTMUCH_STATUS_SUCCESS) {
-                cerr << "error: could not add tag " << t << " to message." << endl;
+                cerr << "error: could not add tag " << t.raw() << " to message." << endl;
                 exit (1);
               }
 
@@ -398,7 +398,7 @@ int main (int argc, char ** argv) {
         if (add.size () > 0) {
           if (more_verbose) {
             cout << "=> adding tags: ";
-            for (auto t : add) cout << t << " ";
+            for (auto t : add) cout << t.raw() << " ";
 
             if (dryrun) cout << "[dryrun]";
             cout << endl;
@@ -417,7 +417,7 @@ int main (int argc, char ** argv) {
         if (rem.size () > 0) {
           if (more_verbose) {
             cout << "=> removing tags: ";
-            for (auto t : rem) cout << t << " ";
+            for (auto t : rem) cout << t.raw() << " ";
 
             if (dryrun) cout << "[dryrun]";
             cout << endl;
@@ -449,10 +449,10 @@ int main (int argc, char ** argv) {
         for (ustring p : paths) {
           if (more_verbose) {
             cout << "old tags: ";
-            for (auto t : file_tags) cout << t << " ";
+            for (auto t : file_tags) cout << t.raw() << " ";
             cout << endl;
             cout << "new tags: ";
-            for (auto t : new_file_tags) cout << t << " ";
+            for (auto t : new_file_tags) cout << t.raw() << " ";
             cout << endl;
           }
 
@@ -471,9 +471,9 @@ int main (int argc, char ** argv) {
     if ((verbose && changed) || more_verbose) {
       cout << "* message (" << count << "), file tags (" << file_tags.size()
            << "): ";
-      for (auto t : file_tags) cout << t << " ";
+      for (auto t : file_tags) cout << t.raw() << " ";
       cout << ", db tags (" << db_tags.size() << "): ";
-      for (auto t : db_tags) cout << t << " ";
+      for (auto t : db_tags) cout << t.raw() << " ";
       cout << endl;
     }
 
@@ -560,11 +560,17 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
     }
   }
 
-  ustring kws (spruce_imap_utf7_utf8(x_keywords));
+  char * kws_c = spruce_imap_utf7_utf8(x_keywords);
+  ustring kws = ustring(kws_c);
+
+  if (!kws.validate ()) {
+    cout << "error: invalid utf8 in keywords" << endl;
+  }
 
   if (more_verbose) {
-    cout << "parsing keywords: " << kws << endl;
+    cout << "parsing keywords: " << kws.raw() << endl;
   }
+
 
   if (enable_split_chars) {
     vector<ustring> initial_tags;
@@ -595,7 +601,7 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
   if (more_verbose) {
     cout << "tags: ";
     for (auto t : file_tags) {
-      cout << t << " ";
+      cout << t.raw() << " ";
     }
     cout << endl;
   }
@@ -624,7 +630,7 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
   if (more_verbose) {
     cout << "tags after map: ";
     for (auto t : file_tags) {
-      cout << "'" <<  t << "' ";
+      cout << "'" <<  t.raw() << "' ";
     }
     cout << endl;
   }
@@ -644,7 +650,7 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
     if (more_verbose) {
       cout << "tags after ignore: ";
       for (auto t : file_tags) {
-        cout << t << " ";
+        cout << t.raw() << " ";
       }
       cout << endl;
     }
