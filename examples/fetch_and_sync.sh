@@ -16,7 +16,7 @@ fi
 revnow=$(./notmuch_get_revision $db)
 
 # sync tags local-to-remote
-./keywsync -m $db -q "$qry AND lastmod:${lastrev}..${revnow}" -t -v
+./keywsync -m $db -q "$qry AND lastmod:${lastrev}..${revnow}" -t -f -v
 
 before_offlineimap=$( date +%s )
 
@@ -28,7 +28,7 @@ offlineimap
 notmuch new
 
 # sync tags remote-to-local
-./keywsync -m $db -q "$qry" --mtime ${before_offlineimap} -k -v
+./keywsync -m $db -q "$qry" --mtime ${before_offlineimap} -k -f -v
 
 # store revision of last sync
 ./notmuch_get_revision $db > ${last_sync_rev}
