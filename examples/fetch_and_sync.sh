@@ -16,20 +16,21 @@ fi
 revnow=$(./notmuch_get_revision $db)
 
 # sync tags local-to-remote
-./keywsync -m $db -q "$qry AND lastmod:${lastrev}..${revnow}" -t -f -v --more-verbose
+./keywsync -m $db -q "$qry AND lastmod:${lastrev}..${revnow}" -t -f -v || exit 1
 
 before_offlineimap=$( date +%s )
 
 # sync maildir <-> imap
-offlineimap
+offlineimap || exit 1
 
 # check for new messages, including doing any auto-tagging in
 # a post-new hook.
-notmuch new
+notmuch new || exit 1
 
 # sync tags remote-to-local
-./keywsync -m $db -q "$qry" --mtime ${before_offlineimap} -k -f -v
+./keywsync -m $db -q "$qry" --mtime ${before_offlineimap} -k -f -v || exit 1
 
 # store revision of last sync
-./notmuch_get_revision $db > ${last_sync_rev}
+echo -n "current db revision: "
+./notmuch_get_revision $db | tee ${last_sync_rev} || exit 1
 
