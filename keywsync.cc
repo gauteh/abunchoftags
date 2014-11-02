@@ -681,20 +681,6 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
     exit (1);
   }
 
-  GMimeStream * f = g_mime_stream_file_new_for_path (msg_path.c_str(),
-      "r");
-  GMimeParser * parser = g_mime_parser_new_with_stream (f);
-  GMimeMessage * message = g_mime_parser_construct_message (parser);
-
-  const char * xkeyw = g_mime_object_get_header (GMIME_OBJECT(message), "X-Keywords");
-  if (xkeyw != NULL) {
-    if (more_verbose)
-      cout << "=> current xkeywords: " << xkeyw << endl;
-  } else {
-    if (more_verbose)
-      cout << "=> current xkeywords: non-existent." << endl;
-  }
-
   /* reverse map */
   for (auto &t : tags) {
     for (auto rep : replace_chars) {
@@ -730,16 +716,92 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
     cout << "=> writing new x-keywords: " << newh_utf7 << endl;
   }
 
-  g_mime_object_set_header (GMIME_OBJECT(message), "X-Keywords", newh_utf7);
+  GMimeStream * f = g_mime_stream_file_new_for_path (msg_path.c_str(),
+      "r");
+  GMimeParser * parser = g_mime_parser_new_with_stream (f);
+  GMimeObject * prt = g_mime_parser_construct_part (parser);
+
+  const char * headers_raw = g_mime_object_get_headers (prt);
+
+  gint64 header_end = strlen (headers_raw);
+
+  /* find header end */
+  /*
+  gint64 header_end = g_mime_parser_get_headers_end (parser);
+  if (header_end == -1) {
+    cerr << "could not find end of header!" << endl;
+    exit (1);
+  }
+  */
+
+  g_object_unref (prt);
+  g_object_unref (parser);
+  g_mime_stream_close (f);
+
+  stringstream headers_s;
+  stringstream contents_s;
+
+  /* read in headers */
+  ifstream orig (msg_path.c_str());
+  filebuf * fbuf = orig.rdbuf ();
+  char headers_c[header_end];
+  fbuf->sgetn (headers_c, header_end);
+  headers_s << headers_c;
+
+  /* get rest of contents */
+  contents_s << fbuf;
+  orig.close ();
+
+
+  /* scan for X-Keywords header */
+  ustring headers (headers_s.str());
+  stringstream headers_new;
+
+  bool found_xkeyw = false;
+
+  while (!headers_s.eof ()) {
+    string inbuf;
+    getline ( headers_s, inbuf );
+
+    int xks = inbuf.find ("X-Keywords");
+    if (xks >= 0) {
+      if (xks != 0) {
+        cerr << "found X-Keywords, but not at start of line!" << endl;
+        exit (1);
+      }
+
+      found_xkeyw = true;
+
+      /* replace */
+      if (more_verbose) {
+        cout << "=> current xkeywords header: " << inbuf << endl;
+      }
+
+      headers_new << "X-Keywords: " << newh_utf7 << endl;
+
+
+    } else {
+      headers_new << inbuf << endl;
+    }
+  }
+
+  if (!found_xkeyw) {
+    cerr << "could not find exisiting X-Keywords header." << endl;
+    exit (1);
+  }
+
 
   char fname[1024] = "/tmp/keywsync-XXXXXX";
   int tmpfd = mkstemp (fname);
-  FILE * tmpf = fdopen (tmpfd, "w");
-  GMimeStream * out = g_mime_stream_file_new (tmpf);
-  g_mime_object_write_to_stream (GMIME_OBJECT(message), out);
 
-  g_mime_stream_flush (out);
-  g_mime_stream_close (out);
+  string headers_new_str = headers_new.str();
+  headers_new_str.pop_back (); // pop extra newline
+  string contents        = contents_s.str();
+
+  write (tmpfd, headers_new_str.c_str(), headers_new_str.size());
+  write (tmpfd, contents.c_str(), contents.size());
+
+  close (tmpfd);
 
   if (verbose) {
     cout << "new file written to: " << fname << endl;
@@ -750,9 +812,6 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
     cout << "replacing contents from file " << fname << " into " << msg_path << endl;
   }
 
-  g_object_unref (message);
-  g_object_unref (parser);
-  g_mime_stream_close (f);
 
   if (!dryrun) {
     /* we have to replace the contents of the message file while
