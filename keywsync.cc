@@ -219,12 +219,40 @@ int main (int argc, char ** argv) {
         }
       }
 
+      if ((mtime_set && mtime_changed) || !mtime_set) {
+        /* check if we have xkeyw header on this file */
+        GMimeStream * f = g_mime_stream_file_new_for_path (fnm, "r");
+        GMimeParser * parser = g_mime_parser_new_with_stream (f);
+        GMimeMessage * msg = g_mime_parser_construct_message (parser);
+        g_mime_stream_file_set_owner (GMIME_STREAM_FILE(f), true);
+
+        const char * x_keywords = g_mime_object_get_header (GMIME_OBJECT(msg),
+            "X-Keywords");
+        if (x_keywords == NULL) {
+          /* no such field */
+          cout << "warning: no X-Keywords header for file, skipping: " << fnm << endl;
+          g_object_unref (parser);
+          g_object_unref (f);
+          g_mime_stream_close (f);
+          continue;
+        }
+
+        g_object_unref (parser);
+        g_object_unref (f);
+        g_mime_stream_close (f);
+      }
+
       paths.push_back (fnm);
       if (more_verbose)
         cout << "* message file: " << fnm << endl;
     }
 
     notmuch_filenames_destroy (nm_fnms); // }}}
+
+    if (paths.size() == 0) {
+      cout << "no files with x-keywords header, skipping message." << endl;
+      continue;
+    }
 
     if (mtime_set) {
       if (mtime_changed) {
@@ -460,6 +488,9 @@ int main (int argc, char ** argv) {
             cout << endl;
           }
 
+          if (more_verbose) {
+            cout << "file: " << p << endl;
+          }
           write_tags (p, new_file_tags);
         }
 
@@ -798,8 +829,8 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   headers_new_str.pop_back (); // pop extra newline
   string contents        = contents_s.str();
 
-  write (tmpfd, headers_new_str.c_str(), headers_new_str.size());
-  write (tmpfd, contents.c_str(), contents.size());
+  write (tmpfd, headers_new_str.c_str(), headers_new_str.size() +1);
+  write (tmpfd, contents.c_str(), contents.size() +1);
 
   close (tmpfd);
 
