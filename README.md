@@ -74,7 +74,8 @@ maildir with the remote maildir:
    the `query` and are modified after offlineimap was run: `echo $before_offlineimap`.
 
 1. Store the current database revision for the next `lastmod` search in the local-to-remote
-   step of your next search: `$ notmuch_get_revision /path/to/db`.
+   step of your next search: `$ notmuch_get_revision /path/to/db`. Alternatively, store the revision from before the local-to-remote sync. In that way it is possible to detect
+   local changes that happened during the sync. This will re-check the messages that were modified as part of the remote-to-local sync.
 
 > Note: `notmuch new` does not detect message changes that do not include a file addition,
 > removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
