@@ -78,7 +78,7 @@ if os.environ.has_key('CPPFLAGS'):
 if os.environ.has_key('LDFLAGS'):
   env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
 
-nmenv = env.Copy()
+nmenv = env.Clone()
 
 def CheckPKGConfig(context, version):
   context.Message( 'Checking for pkg-config... ' )
@@ -166,7 +166,7 @@ libs   = ['notmuch',
           'boost_date_time']
 
 env.AppendUnique (LIBS = libs)
-cenv = env.Copy (CFLAGS = ['-g', '-Wall'])
+cenv = env.Clone (CFLAGS = ['-g', '-Wall'])
 env.AppendUnique (CPPFLAGS = ['-g', '-Wall', '-std=c++11', '-pthread'] )
 
 # write version file
