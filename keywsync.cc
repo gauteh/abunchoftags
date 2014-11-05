@@ -780,8 +780,13 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   /* read in headers */
   ifstream orig (msg_path.c_str());
   filebuf * fbuf = orig.rdbuf ();
-  char headers_c[header_end];
-  fbuf->sgetn (headers_c, header_end);
+  char headers_c[header_end+1];
+  int read = fbuf->sgetn (headers_c, header_end);
+  if (read != header_end) {
+    cerr << "could not read until end of header!";
+    exit (1);
+  }
+  headers_c[header_end] = 0;
   headers_s << headers_c;
 
   /* get rest of contents */
