@@ -39,10 +39,11 @@ keywsync -m $db -q "$qry" --mtime ${before_offlineimap} -k -f -v || fail "remote
 
 # store revision of last sync (if you have very short sync times, this might
 # work best)
-echo -n "storing current db revision: " notmuch_get_revision $db | tee
-${last_sync_rev} || fail "could not get current revision."
+#echo -n "storing current db revision: "
+#notmuch_get_revision $db | tee ${last_sync_rev} || fail "could not get current revision."
 
 # store revision of last sync (using time from before local-to-remote, this
 # wors best with long sync times)
-echo -n "storing version from before local-to-remote sync:" echo ${rewnow} | tee ${last_sync_rev}
+echo -n "storing version from before local-to-remote sync: "
+echo ${revnow} | tee ${last_sync_rev}
 
