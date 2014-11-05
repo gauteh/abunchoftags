@@ -836,7 +836,7 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
 
   ssize_t r;
   /* write header */
-  r = write (tmpfd, headers_new_str.c_str(), headers_new_str.size() +1);
+  r = write (tmpfd, headers_new_str.c_str(), headers_new_str.size());
 
   if (r == -1) {
     cerr << "failed writing file!" << endl;
@@ -844,7 +844,7 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   }
 
   /* write contents */
-  r = write (tmpfd, contents.c_str(), contents.size() +1);
+  r = write (tmpfd, contents.c_str(), contents.size());
 
   if (r == -1) {
     cerr << "failed writing file!" << endl;
