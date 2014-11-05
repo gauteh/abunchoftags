@@ -832,10 +832,24 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
 
   string headers_new_str = headers_new.str();
   headers_new_str.pop_back (); // pop extra newline
-  string contents        = contents_s.str();
+  string contents = contents_s.str();
 
-  write (tmpfd, headers_new_str.c_str(), headers_new_str.size() +1);
-  write (tmpfd, contents.c_str(), contents.size() +1);
+  ssize_t r;
+  /* write header */
+  r = write (tmpfd, headers_new_str.c_str(), headers_new_str.size() +1);
+
+  if (r == -1) {
+    cerr << "failed writing file!" << endl;
+    exit (1);
+  }
+
+  /* write contents */
+  r = write (tmpfd, contents.c_str(), contents.size() +1);
+
+  if (r == -1) {
+    cerr << "failed writing file!" << endl;
+    exit (1);
+  }
 
   close (tmpfd);
 
