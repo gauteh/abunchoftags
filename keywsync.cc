@@ -23,6 +23,11 @@
  *
  *  for usage information.
  *
+ * TODO:
+ * - filter on folder
+ * - create X-Keywords header when non-existant for folders
+ * - figure out a way to sync changes done during a sync
+ *
  */
 
 # include "keywsync.hh"
