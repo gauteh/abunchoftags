@@ -170,11 +170,11 @@ cenv = env.Clone (CFLAGS = ['-g', '-Wall'])
 env.AppendUnique (CPPFLAGS = ['-g', '-Wall', '-std=c++11', '-pthread'] )
 
 # write version file
-print ("writing version.hh..")
-vfd = open ('version.hh', 'w')
-vfd.write ("# pragma once\n")
-vfd.write ("# define GIT_DESC \"%s\"\n\n" % GIT_DESC)
-vfd.close ()
+#print ("writing version.hh..")
+#vfd = open ('version.hh', 'w')
+#vfd.write ("# pragma once\n")
+#vfd.write ("# define GIT_DESC \"%s\"\n\n" % GIT_DESC)
+#vfd.close ()
 
 env = conf.Finish ()
 
