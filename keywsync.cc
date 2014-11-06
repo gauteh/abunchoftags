@@ -165,8 +165,9 @@ int main (int argc, char ** argv) {
   nm_db = setup_db (db_path.c_str());
 
 # ifdef HAVE_NOTMUCH_GET_REV
-  unsigned long revision = notmuch_database_get_revision (nm_db);
-  cout << "* db: current revision: " << revision << endl;
+  const char * uuid;
+  unsigned long revision = notmuch_database_get_revision (nm_db, &uuid);
+  cout << "* db: current revision: " << revision << "(uuid: " << uuid << ")" << endl;
 # endif
 
 

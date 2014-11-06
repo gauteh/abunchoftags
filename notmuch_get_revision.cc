@@ -23,7 +23,8 @@ int main (int argc, char ** argv) {
     return 1;
   }
 
-  unsigned long revision = notmuch_database_get_revision (db);
+  const char *uuid;
+  unsigned long revision = notmuch_database_get_revision (db, &uuid);
 
   cout << revision << endl;
 
