@@ -169,9 +169,6 @@ int main (int argc, char ** argv) {
   cout << "* db: current revision: " << revision << endl;
 # endif
 
-  stringstream ss;
-  ss << revision;
-  string revision_s = ss.str();
 
   time_t gt0 = clock ();
   chrono::time_point<chrono::steady_clock> t0_c = chrono::steady_clock::now ();
