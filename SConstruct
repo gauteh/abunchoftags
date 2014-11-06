@@ -154,6 +154,7 @@ if not conf.CheckLib ('boost_date_time', language = 'c++'):
 
 if conf.CheckNotmuchGetRev ():
   have_get_rev = True
+  env.AppendUnique (CPPFLAGS = [ '-DHAVE_NOTMUCH_GET_REV' ])
 else:
   have_get_rev = False
   print "notmuch_database_get_revision() not available. building notmuch_get_revision will be disabled. please get a notmuch with lastmod capabilities to ensure a speedier sync."

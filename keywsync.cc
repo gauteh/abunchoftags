@@ -164,8 +164,10 @@ int main (int argc, char ** argv) {
   /* open db */
   nm_db = setup_db (db_path.c_str());
 
+# ifdef HAVE_NOTMUCH_GET_REV
   unsigned int revision = notmuch_database_get_revision (nm_db);
   cout << "* db: current revision: " << revision << endl;
+# endif
 
   stringstream ss;
   ss << revision;
