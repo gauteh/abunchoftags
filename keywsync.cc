@@ -227,6 +227,10 @@ int main (int argc, char ** argv) {
       if ((mtime_set && mtime_changed) || !mtime_set) {
         /* check if we have xkeyw header on this file */
         GMimeStream * f = g_mime_stream_file_new_for_path (fnm, "r");
+        if (f == NULL) {
+          cerr << "gmime: could not open file: " << fnm << endl;
+          exit (1);
+        }
         GMimeParser * parser = g_mime_parser_new_with_stream (f);
         GMimeMessage * msg = g_mime_parser_construct_message (parser);
         g_mime_stream_file_set_owner (GMIME_STREAM_FILE(f), true);
@@ -235,7 +239,7 @@ int main (int argc, char ** argv) {
             "X-Keywords");
         if (x_keywords == NULL) {
           /* no such field */
-          cout << "warning: no X-Keywords header for file, skipping: " << fnm << endl;
+          cerr << "warning: no X-Keywords header for file, skipping: " << fnm << endl;
           g_object_unref (parser);
           g_object_unref (f);
           g_mime_stream_close (f);
@@ -754,6 +758,10 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
 
   GMimeStream * f = g_mime_stream_file_new_for_path (msg_path.c_str(),
       "r");
+  if (f == NULL) {
+    cerr << "gmime: could not open file: " << msg_path << endl;
+    exit (1);
+  }
   GMimeParser * parser = g_mime_parser_new_with_stream (f);
   GMimeObject * prt = g_mime_parser_construct_part (parser);
 
