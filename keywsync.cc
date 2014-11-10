@@ -714,7 +714,7 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
 } // }}}
 
 void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
-  /* do the reverse replacements */
+  /* write tags back to the X-Keywords header */
 
   if (enable_split_chars) {
     cerr << "error: cant do reverse tag/keyword transformation when enable_split_chars is enabled" << endl;
@@ -817,6 +817,10 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
       if (xks != 0) {
         cerr << "found X-Keywords, but not at start of line!" << endl;
         exit (1);
+      }
+
+      if (found_xkeyw) {
+        cerr << "found more than one X-Keywords header, both are being updated." << endl;
       }
 
       found_xkeyw = true;
