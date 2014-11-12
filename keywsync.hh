@@ -88,6 +88,8 @@ bool only_add = false;
 bool only_remove = false;
 bool maildir_flags = false;
 
+bool remove_double_x_keywords_header = true;
+
 ustring db_path;
 notmuch_database_t * nm_db;
 

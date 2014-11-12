@@ -136,9 +136,12 @@ int main (int argc, char ** argv) {
   more_verbose = (vm.count("more-verbose") > 0);
   verbose = (vm.count("verbose") > 0) || more_verbose;
   paranoid = (vm.count("paranoid") > 0);
+  remove_double_x_keywords_header &= !paranoid;
   only_add = (vm.count("only-add") > 0);
   only_remove = (vm.count("only-remove") > 0);
   maildir_flags = (vm.count("flags") > 0);
+
+  cout << "=> remove double x-keywords header: " << remove_double_x_keywords_header << endl;
 
   if (vm.count("mtime") > 0) {
     if (direction != KEYWORD_TO_TAG) {
@@ -820,7 +823,18 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
       }
 
       if (found_xkeyw) {
-        cerr << "found more than one X-Keywords header, both are being updated." << endl;
+        if (paranoid) {
+          cerr << "found more than one X-Keywords header, failing: "
+            << msg_path << endl;
+          exit (1);
+        } else {
+          if (remove_double_x_keywords_header) {
+            cerr << "found more than one X-Keywords header, skipping redundant lines.." << endl;
+            continue;
+          } else {
+            cerr << "found more than one X-Keywords header, both are being updated." << endl;
+          }
+        }
       }
 
       found_xkeyw = true;
