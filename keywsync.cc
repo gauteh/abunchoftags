@@ -665,10 +665,12 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
 
   /* do map */
   for (ustring &t : file_tags) {
-    for (auto rep : replace_chars) {
-      ustring::size_type f = t.find (rep.first);
-      if (f != ustring::npos) {
-        t.replace (f, 1, 1, rep.second);
+    if (enable_replace_chars) {
+      for (auto rep : replace_chars) {
+        ustring::size_type f;
+        while (f = t.find (rep.first), f != ustring::npos) {
+          t.replace (f, 1, 1, rep.second);
+        }
       }
     }
 
@@ -726,10 +728,12 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
 
   /* reverse map */
   for (auto &t : tags) {
-    for (auto rep : replace_chars) {
-      ustring::size_type f = t.find (rep.second);
-      if (f != ustring::npos) {
-        t.replace (f, 1, 1, rep.first);
+    if (enable_replace_chars) {
+      for (auto rep : replace_chars) {
+        ustring::size_type f;
+        while (f = t.find (rep.second), f != ustring::npos) {
+          t.replace (f, 1, 1, rep.first);
+        }
       }
     }
 

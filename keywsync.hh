@@ -50,6 +50,7 @@ const list<pair<ustring,ustring>> map_tags {
 };
 
 /* replace chars, done before map keyword to tag */
+bool enable_replace_chars = true;
 const list<pair<char,char>> replace_chars {
   { '/', '.' },
 };
