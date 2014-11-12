@@ -243,6 +243,7 @@ int main (int argc, char ** argv) {
         if (x_keywords == NULL) {
           /* no such field */
           cerr << "warning: no X-Keywords header for file, skipping: " << fnm << endl;
+          skipped_messages++;
           g_object_unref (parser);
           g_object_unref (f);
           g_mime_stream_close (f);
@@ -263,6 +264,7 @@ int main (int argc, char ** argv) {
 
     if (paths.size() == 0) {
       cout << "no files with x-keywords header, skipping message." << endl;
+      skipped_messages++;
       continue;
     }
 
@@ -277,6 +279,7 @@ int main (int argc, char ** argv) {
           cout << "=> message _not_ changed, skipping.." << endl;
         }
 
+        skipped_messages++;
         count++;
         notmuch_message_destroy (message);
         continue;
@@ -294,6 +297,7 @@ int main (int argc, char ** argv) {
         /* possibly keep going? */
         cerr << "=> skipping message." << endl;
         count++;
+        skipped_messages++;
         notmuch_message_destroy (message);
         continue;
       }
@@ -540,7 +544,7 @@ int main (int argc, char ** argv) {
 
   chrono::duration<double> elapsed = chrono::steady_clock::now() - t0_c;
 
-  cout << "=> done, checked: " << count << " messages and changed: " << count_changed << " messages in " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms [cpu], " << elapsed.count() << " s [real time]." << endl;
+  cout << "=> done, checked: " << count << " messages and changed: " << count_changed << " messages (skipped: " << skipped_messages << ") in " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms [cpu], " << elapsed.count() << " s [real time]." << endl;
 
   return 0;
 }
@@ -617,37 +621,20 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
     }
   }
 
-  char * kws_c = spruce_imap_utf7_utf8(x_keywords);
-  ustring kws = ustring(kws_c);
-
-  if (!kws.validate ()) {
-    cout << "error: invalid utf8 in keywords" << endl;
-  }
-
   if (more_verbose) {
-    cout << "parsing keywords: " << kws.raw() << endl;
+    cout << "parsing keywords: " << x_keywords << endl;
   }
 
+  split_string (file_tags, ustring(x_keywords), ",");
 
-  if (enable_split_chars) {
-    vector<ustring> initial_tags;
-    split_string (initial_tags, kws, ",");
+  for (ustring &t : file_tags) {
+    char * tag_c = spruce_imap_utf7_utf8(t.c_str());
+    t = tag_c;
 
-    /* split tags that need splitting into separate tags */
-    for (ustring s : split_chars) {
-      for (auto t : initial_tags) {
-        vector<ustring> k;
-        split_string (k, t, s);
-
-        for (auto kt : k) {
-          file_tags.push_back (kt);
-        }
-      }
+    if (!t.validate ()) {
+      cout << "error: invalid utf8 in keywords" << endl;
     }
-  } else {
-    split_string (file_tags, kws, ",");
   }
-
 
   sort (file_tags.begin (), file_tags.end());
   auto it = unique (file_tags.begin(), file_tags.end());
@@ -720,11 +707,6 @@ vector<ustring> get_keywords (ustring p, bool dont_ignore) { // {{{
 
 void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   /* write tags back to the X-Keywords header */
-
-  if (enable_split_chars) {
-    cerr << "error: cant do reverse tag/keyword transformation when enable_split_chars is enabled" << endl;
-    exit (1);
-  }
 
   /* reverse map */
   for (auto &t : tags) {

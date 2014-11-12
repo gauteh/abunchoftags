@@ -55,12 +55,6 @@ const list<pair<char,char>> replace_chars {
   { '/', '.' },
 };
 
-/* split chars, done before replace chars */
-bool enable_split_chars = false;
-const vector<ustring> split_chars {
-  "/",
-};
-
 bool keywords_consistency_check (vector<ustring> &, vector<ustring> &);
 vector<ustring> get_keywords (ustring p, bool);
 void split_string (vector<ustring> &, ustring, ustring);
@@ -90,6 +84,8 @@ bool only_remove = false;
 bool maildir_flags = false;
 
 bool remove_double_x_keywords_header = true;
+
+int skipped_messages = 0;
 
 ustring db_path;
 notmuch_database_t * nm_db;
