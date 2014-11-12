@@ -73,7 +73,7 @@ int main (int argc, char ** argv) {
     ( "paranoid,p", "be paranoid, fail easily.")
     ( "only-add,a", "only add tags")
     ( "only-remove,r", "only remove tags")
-    ( "enable-add-x-keywords-for-path", po::value<string>(), "allow adding an X-Keywords header if non-existent, when message file is contained in specified path" );
+    ( "enable-add-x-keywords-for-path", po::value<string>(), "allow adding an X-Keywords header if non-existent, when message file is contained in specified path (do not add a trailing /)" );
 
   po::variables_map vm;
   po::store ( po::command_line_parser (argc, argv).options(desc).run(), vm );
