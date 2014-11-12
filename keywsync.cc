@@ -25,8 +25,6 @@
  *
  * TODO:
  * - filter on folder
- * - create X-Keywords header when non-existant for folders
- * - figure out a way to sync changes done during a sync
  *
  */
 
@@ -74,7 +72,8 @@ int main (int argc, char ** argv) {
     ( "more-verbose", "more verbosity")
     ( "paranoid,p", "be paranoid, fail easily.")
     ( "only-add,a", "only add tags")
-    ( "only-remove,r", "only remove tags");
+    ( "only-remove,r", "only remove tags")
+    ( "enable-add-x-keywords-for-path", po::value<string>(), "allow adding an X-Keywords header if non-existent, when message file is contained in specified path" );
 
   po::variables_map vm;
   po::store ( po::command_line_parser (argc, argv).options(desc).run(), vm );
@@ -124,6 +123,24 @@ int main (int argc, char ** argv) {
   }
 
   cout << "=> query: " << inputquery << endl;
+
+  if (vm.count("enable-add-x-keywords-for-path") > 0) {
+
+    if (direction != TAG_TO_KEYWORD) {
+      cerr << "the enable add-x-keywords-for-path option is only allowed for tag-to-keyword sync" << endl;
+      exit (1);
+    }
+
+    enable_add_x_keywords_header = true;
+    add_x_keyw_path = absolute(path (vm["enable-add-x-keywords-for-path"].as<string>()));
+
+    cout << "=> adding x-keywords-header is enabled for: " << add_x_keyw_path << endl;
+
+    if (!exists(add_x_keyw_path)) {
+      cerr << "path does not exist!" << endl;
+      exit (1);
+    }
+  }
 
   if (vm.count ("dry-run")) {
     cout << "=> note: dryrun!" << endl;
@@ -242,12 +259,16 @@ int main (int argc, char ** argv) {
             "X-Keywords");
         if (x_keywords == NULL) {
           /* no such field */
-          cerr << "warning: no X-Keywords header for file, skipping: " << fnm << endl;
-          skipped_messages++;
-          g_object_unref (parser);
-          g_object_unref (f);
-          g_mime_stream_close (f);
-          continue;
+          if (enable_add_x_keywords_header) {
+            cerr << "warning: no X-Keywords header for file, will be added for file: " << fnm << endl;
+          } else {
+            cerr << "warning: no X-Keywords header for file, skipping: " << fnm << endl;
+            skipped_messages++;
+            g_object_unref (parser);
+            g_object_unref (f);
+            g_mime_stream_close (f);
+            continue;
+          }
         }
 
         g_object_unref (parser);
@@ -834,13 +855,36 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
 
 
     } else {
-      headers_new << inbuf << endl;
+      if (inbuf.size() > 0)
+        headers_new << inbuf << endl;
     }
   }
 
   if (!found_xkeyw) {
     cerr << "could not find exisiting X-Keywords header." << endl;
-    exit (1);
+    if (enable_add_x_keywords_header) {
+      path m_p = absolute(path(msg_path.c_str()));
+
+      /* test if path is in allowed path */
+      bool allowed = false;
+      while (m_p != path("/")) {
+        if (m_p == add_x_keyw_path) {
+          allowed = true;
+          break;
+        }
+        m_p = m_p.parent_path();
+      }
+
+      if (allowed) {
+        cerr << "adding new X-Keywords header for " << msg_path << endl;
+        headers_new << "X-Keywords: " << newh_utf7 << endl;
+      } else {
+        cerr << "not allowed to add X-Keywords header for: " << msg_path << endl;
+      }
+
+    } else {
+      exit (1);
+    }
   }
 
 
@@ -848,7 +892,6 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   int tmpfd = mkstemp (fname);
 
   string headers_new_str = headers_new.str();
-  headers_new_str.pop_back (); // pop extra newline
   string contents = contents_s.str();
 
   ssize_t r;

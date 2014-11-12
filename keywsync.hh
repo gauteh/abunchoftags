@@ -82,6 +82,8 @@ bool paranoid = false;
 bool only_add = false;
 bool only_remove = false;
 bool maildir_flags = false;
+bool enable_add_x_keywords_header = false;
+path add_x_keyw_path;
 
 bool remove_double_x_keywords_header = true;
 
