@@ -25,6 +25,7 @@
  *
  * TODO:
  * - filter on folder
+ * - tag-to-keyword -> on many x-keywords headers, merge 'em
  *
  */
 
