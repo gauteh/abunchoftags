@@ -32,7 +32,6 @@ const vector<ustring> ignore_tags = {
   "new",
   "passed",
   "replied",
-  "sent",
   "signed",
   "unread",
 };
