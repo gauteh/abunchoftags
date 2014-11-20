@@ -824,12 +824,7 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
     getline ( headers_s, inbuf );
 
     int xks = inbuf.find ("X-Keywords");
-    if (xks >= 0) {
-      if (xks != 0) {
-        cerr << "found X-Keywords, but not at start of line!" << endl;
-        exit (1);
-      }
-
+    if (xks == 0) {
       if (found_xkeyw) {
         if (paranoid) {
           cerr << "found more than one X-Keywords header, failing: "
