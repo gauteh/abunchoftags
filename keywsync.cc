@@ -188,7 +188,7 @@ int main (int argc, char ** argv) {
 # ifdef HAVE_NOTMUCH_GET_REV
   const char * uuid;
   unsigned long revision = notmuch_database_get_revision (nm_db, &uuid);
-  cout << "* db: current revision: " << revision << "(uuid: " << uuid << ")" << endl;
+  cout << "* db: current revision: " << revision  << endl;
 # endif
 
 
