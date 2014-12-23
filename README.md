@@ -10,7 +10,7 @@ This is highly experimental. It will modify you emails. It may totally destroy a
 ## Things to be aware of
 Check out `keywsync.hh` to see which tags are ignored and how the mappings are done. I also replace `/` with `.`,
 so if you got any tags with `.` in them it is going to become a mess. Also, there is no support for tags with
-spaces in them (they should probably be wrapped in quotes at some point).
+spaces in them (they should probably be wrapped in quotes at some point). Make sure you have a recent version of OfflineIMAP, some issues with [multiple occurences of tags](https://github.com/OfflineIMAP/offlineimap/pull/136) should be fixed there.
 
 ## Usage
 
