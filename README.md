@@ -100,11 +100,14 @@ took 1m48s and used about 108MB of memory.
 Running a full tag-to-keyword check on the same message base with 3 changed messages
 took about 1m5s and 100MB of memory.
 
-[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels  
-[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu  
-[2] Someone have any documentation anywhere?  
 
 ## References
+
+[0] http://offlineimap.readthedocs.org/en/next/MANUAL.html?highlight=keywords#sync-from-gmail-to-a-local-maildir-with-labels  
+[1] id:1413181203-1676-1-git-send-email-aclements@csail.mit.edu  
+[2] Someone have any documentation [anywhere?](https://github.com/OfflineIMAP/offlineimap/issues/130)
+
+#### Other resources
 
 Access to GMail labels via IMAP extensions: https://developers.google.com/gmail/imap_extensions#access_to_gmail_labels_x-gm-labels  
 Commit in OfflineIMAP for GMail label support: https://github.com/OfflineIMAP/offlineimap/commit/0e4afa913253c43409e6a32a6b6e11e8b03ed3d9  
