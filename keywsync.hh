@@ -26,7 +26,7 @@ notmuch_database_t * setup_db (const char *);
 const vector<ustring> ignore_tags = {
   "attachment",
   "draft",
-  "encrypted"
+  "encrypted",
   "flagged",
   "important",
   "new",
