@@ -10,6 +10,16 @@ function fail() {
   exit 1
 }
 
+# check if offlineimap is running
+if getoffimap > /dev/null ; then
+  fail "offlineimap is already running."
+fi
+
+# check if we have a connection
+if ! ping -W 1 -c 1 mail.google.com; then
+  fail "there is no internet connection."
+fi
+
 db=/home/gaute/.mail/
 qry="path:gaute.vetsj.com/**"
 
