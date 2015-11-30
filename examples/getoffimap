@@ -1,0 +1,22 @@
+# /bin/bash
+
+if [ -f ~/.offlineimap/pid ]; then
+  p=$(cat ~/.offlineimap/pid)
+
+  # check if pid is alive
+  if kill -0 $p > /dev/null 2>&1 ; then
+
+    # check if this pid is offlineimap
+    if ps -p $p -u | grep offlineimap > /dev/null 2>&1 ; then
+
+      echo $p
+      exit 0
+
+    else
+      exit 1
+    fi
+  else
+    exit 1
+  fi
+fi
+
