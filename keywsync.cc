@@ -797,8 +797,8 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
   stringstream contents_s;
 
   /* read in headers */
-  ifstream orig (msg_path.c_str());
-  filebuf * fbuf = orig.rdbuf ();
+  std::ifstream orig (msg_path.c_str());
+  std::filebuf * fbuf = orig.rdbuf ();
   char headers_c[header_end+1];
   int read = fbuf->sgetn (headers_c, header_end);
   if (read != header_end) {
@@ -925,8 +925,8 @@ void write_tags (ustring msg_path, vector<ustring> tags) { // {{{
      * treating the file as a new one (and the previous a deleted one).
      */
 
-    ifstream i (fname, ios::binary);
-    ofstream o (msg_path.c_str(), ios::binary | ofstream::trunc);
+    std::ifstream i (fname, ios::binary);
+    std::ofstream o (msg_path.c_str(), ios::binary | std::ofstream::trunc);
 
     o << i.rdbuf ();
     i.close ();
