@@ -1,0 +1,33 @@
+#-------------------------------------------------------------------------------
+# Unit tests
+Import('testEnv')
+Import('env')
+Import('source')
+testEnv = testEnv.Clone()
+testEnv.AppendUnique(LIBPATH=[env.Dir('../lib')], LIBS=[])
+testEnv.PrependENVPath('LD_LIBRARY_PATH', env.Dir('.').abspath)
+
+# set output level of tests
+# http://www.boost.org/doc/libs/1_34_1/libs/test/doc/components/utf/parameters/log_level.html
+testEnv['ENV']['BOOST_TEST_LOG_LEVEL'] = 'all'
+
+# We can add single file unit tests very easily.
+#testEnv.addUnitTest('test.cpp')
+# also, multiple files can be compiled into a single test suite.
+#files = Split('''
+#        one_test.cpp
+#        two_test.cpp
+#        ''')
+#testEnv.addUnitTest('test_suite', files)
+# you can also use glob to add all the files in the folder.
+
+testEnv.Tool ('notmuch_test_db')
+testEnv.Tool ('shellscript')
+
+test_db = testEnv.NotmuchTestDb ('mail/test_config.template')
+testEnv.Alias ('test_db', test_db)
+testEnv.Alias ('test', 'test_db')
+
+testEnv.addSh ('test_run.sh')
+
+# all the tests added above are automatically added to the 'test' alias

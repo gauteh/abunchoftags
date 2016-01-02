@@ -1,0 +1,5 @@
+*.passed
+mail/*.setup
+mail/test_config
+mail/test_mail/.notmuch
+

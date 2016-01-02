@@ -10,6 +10,15 @@ GIT_DESC = getGitDesc ()
 print "building " + GIT_DESC + ".."
 env = Environment ()
 
+if 'clean_test' in COMMAND_LINE_TARGETS:
+  print "cleaning out tests.."
+  for fn in os.listdir('./test/'):
+    if '.passed' in fn:
+      print "delting: " + fn
+      os.remove (os.path.join ('./test', fn))
+
+  exit ()
+
 # Verbose / Non-verbose output{{{
 colors = {}
 colors['cyan']   = '\033[96m'
@@ -181,11 +190,31 @@ env.AppendUnique (CPPFLAGS = ['-g', '-Wall', '-std=c++11', '-pthread'] )
 env = conf.Finish ()
 
 spruce = cenv.Object ('spruce-imap-utils.c')
-env.Program (source = [ 'keywsync.cc', spruce ], target = 'keywsync')
+source = [ env.Object ('keywsync.cc'), spruce ]
+
+env.Program (source = source, target = 'keywsync')
 env.Alias ('build', ['keywsync'])
 
 if have_get_rev:
   nmenv.AppendUnique (LIBS = ['notmuch'])
   nmenv.Program ('notmuch_get_revision', source = [ 'notmuch_get_revision.cc' ])
   nmenv.Alias ('build', ['notmuch_get_revision'])
+
+## tests
+# http://drowcode.blogspot.no/2008/12/few-days-ago-i-decided-i-wanted-to-use.html
+testEnv = env.Clone()
+testEnv.Append (CPPPATH = '../')
+testEnv.Tool ('unittest',
+              toolpath=['test/bt/'],
+              UTEST_MAIN_SRC=File('test/bt/boostautotestmain.cc'),
+              LIBS=['boost_unit_test_framework']
+)
+
+
+Export ('source')
+Export ('testEnv')
+Export ('env')
+
+# grab stuff from sub-directories.
+env.SConscript(dirs = ['test'])
 

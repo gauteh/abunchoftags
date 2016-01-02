@@ -6,5 +6,6 @@ notmuch_get_revision
 .sconf*
 config.log
 *.o
+*.pyc
 
 last_sync_rev
