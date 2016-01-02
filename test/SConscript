@@ -28,6 +28,7 @@ test_db = testEnv.NotmuchTestDb ('mail/test_config.template')
 testEnv.Alias ('test_db', test_db)
 testEnv.Alias ('test', 'test_db')
 
-testEnv.addSh ('test_run.sh')
+testEnv.addSh ('test_db_revision.sh')
+testEnv.addSh ('test_kw_to_tag.sh')
 
 # all the tests added above are automatically added to the 'test' alias
