@@ -10,12 +10,24 @@ GIT_DESC = getGitDesc ()
 print "building " + GIT_DESC + ".."
 env = Environment ()
 
+import shutil
+
 if 'clean_test' in COMMAND_LINE_TARGETS:
   print "cleaning out tests.."
   for fn in os.listdir('./test/'):
-    if '.passed' in fn:
+    if '.passed' in fn or '.setup' in fn:
       print "delting: " + fn
       os.remove (os.path.join ('./test', fn))
+
+  for fn in os.listdir('./test/mail/'):
+    if '.passed' in fn or '.setup' in fn:
+      print "delting: " + fn
+      os.remove (os.path.join ('./test/mail/', fn))
+
+  # clean notmuch dir
+  print "cleaning out notmuch dir.."
+  if os.path.exists ("./test/mail/test_mail/.notmuch"):
+    shutil.rmtree ("./test/mail/test_mail/.notmuch")
 
   exit ()
 
