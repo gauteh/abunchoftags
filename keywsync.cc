@@ -287,6 +287,7 @@ int main (int argc, char ** argv) {
     if (paths.size() == 0) {
       cout << "no files with x-keywords header, skipping message." << endl;
       skipped_messages++;
+      count++;
       continue;
     }
 
