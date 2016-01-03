@@ -205,7 +205,7 @@ spruce = cenv.Object ('spruce-imap-utils.c')
 source = [ env.Object ('keywsync.cc'), spruce ]
 
 env.Program (source = source, target = 'keywsync')
-env.Alias ('build', ['keywsync'])
+build = env.Alias ('build', ['keywsync'])
 
 if have_get_rev:
   nmenv.AppendUnique (LIBS = ['notmuch'])
@@ -227,6 +227,7 @@ Export ('source')
 Export ('testEnv')
 Export ('env')
 
+Default (build)
 # grab stuff from sub-directories.
 env.SConscript(dirs = ['test'])
 
