@@ -24,7 +24,6 @@
  *  for usage information.
  *
  * TODO:
- * - filter on folder
  * - tag-to-keyword -> on many x-keywords headers, merge 'em
  *
  */
@@ -92,6 +91,10 @@ int main (int argc, char ** argv) {
     cout << "error: specify database path." << endl;
     exit (1);
   }
+
+  path _db_path (db_path);
+  _db_path = boost::filesystem::canonical (_db_path);
+  db_path = ustring (_db_path.c_str ());
 
   cout << "=> db: " << db_path << endl;
 
