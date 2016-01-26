@@ -18,5 +18,7 @@ if [ -f ~/.offlineimap/pid ]; then
   else
     exit 1
   fi
+else
+  exit 1
 fi
 
