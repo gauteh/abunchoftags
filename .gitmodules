@@ -1,0 +1,3 @@
+[submodule "dist/archlinux"]
+	path = dist/archlinux
+	url = ssh+git://aur@aur.archlinux.org/abunchoftags.git
