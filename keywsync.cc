@@ -73,6 +73,8 @@ int main (int argc, char ** argv) {
     ( "paranoid,p", "be paranoid, fail easily.")
     ( "only-add,a", "only add tags")
     ( "only-remove,r", "only remove tags")
+    ( "replace-chars", "Replace '/' with '.' and the inverse")
+    ( "no-replace-chars", "Do not replace '/' with '.' and the inverse")
     ( "enable-add-x-keywords-for-path", po::value<string>(), "allow adding an X-Keywords header if non-existent, when message file is contained in specified path (do not add a trailing /)" );
 
   po::variables_map vm;
@@ -82,6 +84,17 @@ int main (int argc, char ** argv) {
     cout << desc << endl;
 
     exit (0);
+  }
+
+  if (vm.count ("replace-chars") && !vm.count("no-replace-chars")) {
+    enable_replace_chars = true;
+    cout << "replace chars: true" << endl;
+  } else if (!vm.count("replace-chars") && vm.count("no-replace-chars")) {
+    enable_replace_chars = false;
+    cout << "replace chars: false" << endl;
+  } else {
+    cout << "error: specify either --replace-chars or --no-replace-chars" << endl;
+    exit (1);
   }
 
   /* load config */
