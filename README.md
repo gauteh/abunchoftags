@@ -64,6 +64,8 @@ maildir with the remote maildir:
 >  Note: The query needs to filter messages so that only the messages of the
 >  GMail maildir are tested.
 
+See this example: [fetch_and_sync.sh](examples/fetch_and_sync.sh).
+
 1. Synchronize tags local-to-remote (`-t`), now all tag changes done in the
    notmuch db are synchronized with the message files (preferably using a
    `lastmod:` query [1] which catches messages where  have been done after
