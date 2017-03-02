@@ -68,7 +68,7 @@ See this example: [fetch_and_sync.sh](examples/fetch_and_sync.sh).
 
 1. Synchronize tags local-to-remote (`-t`), now all tag changes done in the
    notmuch db are synchronized with the message files (preferably using a
-   `lastmod:` query [1] which catches messages where  have been done after
+   `lastmod:` query [1] which catches messages where changes have been done after
    the revision of the db at the time of the last remote-to-local synchronization)
 
 1. Save the current unix time: `$ before_offlineimap=$( date +%s )`
@@ -83,13 +83,16 @@ See this example: [fetch_and_sync.sh](examples/fetch_and_sync.sh).
    but the maildir in question. Use the `--mtime` flag to only sync messages that match
    the `query` and are modified after offlineimap was run: `echo $before_offlineimap`.
 
-1. Store the current database revision for the next `lastmod` search in the local-to-remote
-   step of your next search: `$ notmuch_get_revision /path/to/db`. Alternatively, store the revision from before the local-to-remote sync. In that way it is possible to detect
-   local changes that happened during the sync. This will re-check the messages that were modified as part of the remote-to-local sync.
+1. Store the current database revision for the next `lastmod` search in the
+   local-to-remote step of your next search: `$ notmuch_get_revision
+   /path/to/db`. Alternatively, store the revision from before the
+   local-to-remote sync. In that way it is possible to detect local changes
+   that happened during the sync. This will re-check the messages that were
+   modified as part of the remote-to-local sync.
 
 > Note: `notmuch new` does not detect message changes that do not include a file addition,
 > removal or rename. Therefore simple changes to the `X-Keywords` header will not be detected.
-> Use the --mtime query to filter out unchanged files.
+> Use the **--mtime** query to filter out unchanged files.
 
 ## Initial sync
 
