@@ -56,7 +56,7 @@ using namespace boost::posix_time;
 int main (int argc, char ** argv) {
   cout << "** keyword <-> tag sync" << endl;
 
-  /* options */
+  /* options {{{ */
   namespace po = boost::program_options;
   po::options_description desc ("options");
   desc.add_options ()
@@ -167,12 +167,12 @@ int main (int argc, char ** argv) {
     cout << "=> note: real-mode, not dry-run!" << endl;
   }
 
-  more_verbose = (vm.count("more-verbose") > 0);
-  verbose = (vm.count("verbose") > 0) || more_verbose;
-  paranoid = (vm.count("paranoid") > 0);
+  more_verbose  = (vm.count("more-verbose") > 0);
+  verbose       = (vm.count("verbose") > 0) || more_verbose;
+  paranoid      = (vm.count("paranoid") > 0);
   remove_double_x_keywords_header &= !paranoid;
-  only_add = (vm.count("only-add") > 0);
-  only_remove = (vm.count("only-remove") > 0);
+  only_add      = (vm.count("only-add") > 0);
+  only_remove   = (vm.count("only-remove") > 0);
   maildir_flags = (vm.count("flags") > 0);
 
   cout << "=> remove double x-keywords header: " << remove_double_x_keywords_header << endl;
@@ -189,14 +189,15 @@ int main (int argc, char ** argv) {
 
     only_after_mtime = from_time_t (mtime_t);
 
-    cout << "mtime: only operating messages with mtime newer than: " << to_simple_string(only_after_mtime) << endl;
-
+    cout << "mtime: only working on messages with mtime newer than: " << to_simple_string(only_after_mtime) << endl;
   }
 
   if (only_add && only_remove) {
     cerr << "only one of -a or -r can be specified at the same time" << endl;
     exit (1);
   }
+
+  /* }}} */
 
   /* open db */
   nm_db = setup_db (db_path.c_str());
@@ -215,10 +216,24 @@ int main (int argc, char ** argv) {
   query = notmuch_query_create (nm_db,
       inputquery.c_str());
 
-  int total_messages = notmuch_query_count_messages (query);
+  notmuch_status_t st;
+  unsigned int total_messages;
+  st = notmuch_query_count_messages_st (query, &total_messages);
+
+  if (st != NOTMUCH_STATUS_SUCCESS) {
+    cerr << "db: failed to get message count." << endl;
+    exit (1);
+  }
+
   cout << "*  messages to check: " << total_messages << endl;
 
-  notmuch_messages_t * messages = notmuch_query_search_messages (query);
+  notmuch_messages_t * messages;
+  st = notmuch_query_search_messages_st (query, &messages);
+
+  if (st != NOTMUCH_STATUS_SUCCESS) {
+    cerr << "db: failed to search messages." << endl;
+    exit (1);
+  }
 
   cout << "*  query time: " << ((clock() - gt0) * 1000.0 / CLOCKS_PER_SEC) << " ms." << endl;
 
