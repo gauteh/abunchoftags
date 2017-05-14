@@ -64,7 +64,10 @@ maildir with the remote maildir:
 >  Note: The query needs to filter messages so that only the messages of the
 >  GMail maildir are tested.
 
-See this example: [fetch_and_sync.sh](examples/fetch_and_sync.sh).
+See these examples:
+[a stand-alone script for one-time syncing](examples/fetch_and_sync.sh)
+and
+[OfflineIMAP hooks for realtime syncing](https://gist.github.com/aureooms/9a49224a47cd153a67dc4af2feeaa379).
 
 1. Synchronize tags local-to-remote (`-t`), now all tag changes done in the
    notmuch db are synchronized with the message files (preferably using a
